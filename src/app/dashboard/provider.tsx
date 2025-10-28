@@ -35,6 +35,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
+  const isSuperAdmin = user?.email === 'bimex4@gmail.com';
   
   const userProfileRef = useMemo(() => {
     if (!user || !firestore) return null;
@@ -46,15 +47,21 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && userProfile) {
-        // Allow access to the linking page if the patient is not yet linked
+      if (isSuperAdmin) {
+        // Super admin can go anywhere, but default to super admin page
+        if (pathname === '/dashboard') {
+          router.replace('/dashboard/super-admin');
+        }
+        return;
+      }
+      
        if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
-        router.push('/dashboard/my-records');
-       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff' && pathname !== '/dashboard/super-admin') {
-         // Redirect staff to staff page if they have no clinic
-        router.push('/dashboard/staff');
+        router.replace('/dashboard/my-records');
+       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
+        router.replace('/dashboard/staff');
       }
     }
-  }, [isLoading, userProfile, router, pathname]);
+  }, [isLoading, userProfile, router, pathname, isSuperAdmin]);
   
   if (isLoading || !userProfile) {
      return <LoadingAnimation />;
@@ -70,7 +77,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             <div className="flex flex-col flex-1 min-w-0">
               <AppHeader />
               <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-                {children}
+                 {children}
               </main>
             </div>
           </div>
@@ -79,3 +86,5 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       </AuthGuard>
   );
 }
+
+    

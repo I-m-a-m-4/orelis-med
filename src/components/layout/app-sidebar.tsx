@@ -64,7 +64,7 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
         </Link>
       </SidebarHeader>
       <SidebarContent className="p-2">
-        <SidebarMenu>
+        <SidebarMenu className="mt-8">
           {isLoading ? (
             <>
               <SidebarMenuSkeleton showIcon />
@@ -109,6 +109,18 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
+                isActive={pathname.startsWith('/dashboard/support')}
+                tooltip="Support"
+              >
+                <Link href="/dashboard/support">
+                  <LifeBuoy />
+                  <span>Support</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
                 isActive={pathname.startsWith('/dashboard/settings')}
                 tooltip="Settings"
               >
@@ -118,19 +130,10 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                tooltip="Support"
-              >
-                <Link href="/contact">
-                  <LifeBuoy />
-                  <span>Support</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
           </SidebarMenu>
       </SidebarFooter>
     </>
   );
 }
+
+    

@@ -11,6 +11,7 @@ import { collection, doc, query, where } from "firebase/firestore";
 import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
+import { LoadingAnimation } from "@/components/layout/loading-animation";
 
 const AdminDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
@@ -135,9 +136,21 @@ export default function DashboardPage() {
     }, [user, firestore]);
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
+    if (userLoading || profileLoading || !userProfile) {
+        return <LoadingAnimation />;
+    }
+    
+    return <DashboardContent userProfile={userProfile} />;
+}
+
+function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
+    const firestore = useFirestore();
+
+    // All queries now safely use the validated userProfile
     const appointmentsQuery = useMemo(() => {
-        if (!firestore || !userProfile?.clinicId) return null;
-        if (userProfile.role === 'patient' && userProfile.patientId) {
+        if (!firestore) return null;
+        if (userProfile.role === 'patient') {
+             if (!userProfile.patientId) return null;
              return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
         }
         if (userProfile.clinicId) {
@@ -148,7 +161,7 @@ export default function DashboardPage() {
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
     const patientsQuery = useMemo(() => {
-        if (!firestore || !userProfile?.clinicId) return null;
+        if (!firestore || !userProfile.clinicId) return null;
         return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
@@ -160,27 +173,8 @@ export default function DashboardPage() {
 
     const recentPatients = patients?.sort((a,b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()).slice(0, 4);
 
-    const isLoading = userLoading || profileLoading;
 
     const renderDashboardByRole = () => {
-        if (isLoading || !userProfile) {
-            return (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="border-dashed">
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <Skeleton className="h-4 w-2/3" />
-                                <Skeleton className="h-4 w-4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-7 w-1/3" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            );
-        }
-
         switch (userProfile.role) {
             case 'admin': return <AdminDashboard userProfile={userProfile} />;
             case 'doctor': return <DoctorDashboard userProfile={userProfile} />;
@@ -188,29 +182,6 @@ export default function DashboardPage() {
             case 'patient': return <PatientDashboard userProfile={userProfile} />;
             default: return <p>Welcome to your Orelis dashboard.</p>;
         }
-    }
-
-    if (isLoading) {
-         return (
-             <div className="flex flex-col gap-4 md:gap-8 noisy-bg -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8">
-                 <Skeleton className="h-8 w-48" />
-                 <div className="relative border border-dashed rounded-lg p-4 sm:p-6 md:p-8">
-                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        {[...Array(4)].map((_, i) => (
-                            <Card key={i} className="border-dashed">
-                                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                    <Skeleton className="h-4 w-2/3" />
-                                    <Skeleton className="h-4 w-4" />
-                                </CardHeader>
-                                <CardContent>
-                                    <Skeleton className="h-7 w-1/3" />
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                 </div>
-             </div>
-         )
     }
 
     if (userProfile?.role === 'patient') {
@@ -331,3 +302,5 @@ export default function DashboardPage() {
         </div>
     )
 }
+
+    
