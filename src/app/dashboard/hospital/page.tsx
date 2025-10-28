@@ -6,8 +6,6 @@ import { doc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Hospital, UserCog } from "lucide-react";
 
-export const dynamic = 'force-dynamic';
-
 export default function HospitalPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();

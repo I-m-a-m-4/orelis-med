@@ -1,4 +1,3 @@
-
 'use client';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -11,8 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { GrantInfiniteButton } from './grant-infinite-button';
 import { useEffect } from 'react';
-
-export const dynamic = 'force-dynamic';
 
 function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
     const { user, loading } = useUser();

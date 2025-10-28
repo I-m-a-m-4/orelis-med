@@ -1,4 +1,3 @@
-
 'use client';
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Activity, Users, Calendar, Stethoscope, User, ArrowRight, FileText } from "lucide-react";
@@ -10,8 +9,6 @@ import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { collection, doc, query, where } from "firebase/firestore";
 import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
-
-export const dynamic = 'force-dynamic';
 
 const AdminDashboard = () => {
     const firestore = useFirestore();

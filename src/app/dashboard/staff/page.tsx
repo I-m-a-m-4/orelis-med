@@ -1,4 +1,3 @@
-
 'use client';
 import { PlusCircle, ListFilter, MoreHorizontal, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,8 +13,6 @@ import type { UserProfile } from "@/lib/types";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useDoc } from "@/firebase";
-
-export const dynamic = 'force-dynamic';
 
 export default function StaffPage() {
     const { user, loading: userLoading } = useUser();

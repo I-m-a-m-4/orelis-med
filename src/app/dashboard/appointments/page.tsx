@@ -1,4 +1,3 @@
-
 'use client';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,8 +11,6 @@ import { useFirestore, useUser } from "@/firebase/provider";
 import type { Appointment } from "@/lib/types";
 import { useState } from "react";
 import Link from "next/link";
-
-export const dynamic = 'force-dynamic';
 
 function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
     if (loading) {

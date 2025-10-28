@@ -1,4 +1,3 @@
-
 'use client';
 import { useActionState } from 'react';
 import { useEffect, useRef } from 'react';
@@ -11,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
-
-export const dynamic = 'force-dynamic';
 
 const initialState: AddStaffFormState = {
   message: '',

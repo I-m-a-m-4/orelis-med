@@ -1,4 +1,3 @@
-
 'use client';
 import { useActionState } from 'react';
 import { addPatientAction, type AddPatientFormState } from '@/app/actions';
@@ -16,8 +15,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
-
-export const dynamic = 'force-dynamic';
 
 const initialState: AddPatientFormState = {
   message: '',

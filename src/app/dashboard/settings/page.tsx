@@ -1,6 +1,4 @@
-
 'use client';
-
 import { useActionState, useEffect, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,8 +12,6 @@ import { updateProfileAction, type UpdateProfileFormState } from '@/app/actions'
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
 import { Building, CreditCard, Loader2 } from 'lucide-react';
-
-export const dynamic = 'force-dynamic';
 
 const initialState: UpdateProfileFormState = {
   message: '',
