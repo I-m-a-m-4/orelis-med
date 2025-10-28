@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, getDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { UserProfile } from "@/lib/types";
+import { updateProfile } from "firebase/auth";
 
 function SignUpForm() {
   const router = useRouter();
@@ -54,6 +55,7 @@ function SignUpForm() {
     const { user, error } = await createUserWithEmail(email, password);
     
     if (user) {
+      await updateProfile(user, { displayName: adminName });
       const result = await createUserInFirestore(user.uid, email, adminName, 'admin', { clinicName });
        if (result.success) {
         toast({
@@ -64,14 +66,14 @@ function SignUpForm() {
       } else {
         toast({
             title: "Error setting up profile",
-            description: result.message,
+            description: "An unexpected error occurred. Please try again.",
             variant: "destructive",
         });
       }
     } else if (error) {
        toast({
             title: "Sign-up Failed",
-            description: error.message,
+            description: "Could not create account. The email might be in use.",
             variant: "destructive",
         });
     }
@@ -80,50 +82,50 @@ function SignUpForm() {
   }
 
   return (
-    <Card className="bg-black border-none rounded-none">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">Create a Clinic Account</CardTitle>
-        <CardDescription>Join Orelis to start managing your practice.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleEmailSignUp} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="clinic-name">Clinic Name</Label>
-              <Input name="clinic-name" id="clinic-name" placeholder="Sunshine Medical Center" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="admin@sunshinemedical.com"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full" disabled={isSigningIn}>
-              {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSigningIn ? 'Creating Account...' : 'Create Account'}
-            </Button>
-        </form>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/login" className="underline">
-            Log in
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+      <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
+        <CardHeader>
+          <CardTitle className="text-2xl font-headline">Create a Clinic Account</CardTitle>
+          <CardDescription>Join Orelis to start managing your practice.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleEmailSignUp} className="grid gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="clinic-name">Clinic Name</Label>
+                <Input name="clinic-name" id="clinic-name" placeholder="Sunshine Medical Center" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="admin@sunshinemedical.com"
+                  required
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="password">Password</Label>
+                <Input id="password" name="password" type="password" required />
+              </div>
+              <Button type="submit" className="w-full" disabled={isSigningIn}>
+                {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSigningIn ? 'Creating Account...' : 'Create Account'}
+              </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="underline">
+              Log in
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
   )
 }
 
 function SignUpSkeleton() {
   return (
-    <Card className="bg-black border-none rounded-none">
+    <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
       <CardHeader>
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
@@ -169,3 +171,5 @@ export default function ClinicSignUpPage() {
     </div>
   );
 }
+
+    

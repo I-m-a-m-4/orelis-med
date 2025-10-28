@@ -149,13 +149,16 @@ const BlogCarousel = () => {
                                         </div>
                                     </div>
                                     <div className="relative flex-grow flex flex-col justify-between p-4 md:p-6">
-                                        <div className="flex flex-col gap-2">
+                                        <div className="flex flex-col gap-2 mb-4">
                                             <h3 className="font-sans text-xl font-medium text-white">{post.title}</h3>
                                             <p className="font-sans text-base relative text-zinc-400">{post.excerpt}</p>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-4 text-sm text-primary">
-                                            <ArrowRight className="w-4 h-4" />
-                                            <span>Read more</span>
+                                        <div className="flex items-center gap-3">
+                                            <Image src={post.authorAvatar} alt={post.author} width={40} height={40} className="rounded-full object-cover" />
+                                            <div>
+                                                <p className="text-sm font-medium text-white">{post.author}</p>
+                                                <p className="text-xs text-zinc-400">{post.date} &middot; {post.readTime}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -318,3 +321,5 @@ export default function BlogPage() {
     </div>
   );
 }
+
+    

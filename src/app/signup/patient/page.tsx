@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, getDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import type { UserProfile } from "@/lib/types";
+import { updateProfile } from "firebase/auth";
+
 
 const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
@@ -68,7 +70,7 @@ function SignUpForm() {
             'patient'
           );
           if (!result.success) {
-            toast({ title: "Error", description: result.message, variant: "destructive" });
+            toast({ title: "Error", description: "Could not create your user profile. Please try again.", variant: "destructive" });
             setIsGoogleSigningIn(false);
             return;
           }
@@ -107,6 +109,7 @@ function SignUpForm() {
     const { user, error } = await createUserWithEmail(email, password);
     
     if (user) {
+      await updateProfile(user, { displayName: fullName });
       const result = await createUserInFirestore(user.uid, email, fullName, 'patient');
        if (result.success) {
         toast({
@@ -117,14 +120,14 @@ function SignUpForm() {
       } else {
         toast({
             title: "Error setting up profile",
-            description: result.message,
+            description: "An unexpected error occurred. Please try again.",
             variant: "destructive",
         });
       }
     } else if (error) {
        toast({
             title: "Sign-up Failed",
-            description: error.message,
+            description: "Could not create account. The email might be in use or the password is too weak.",
             variant: "destructive",
         });
     }
@@ -133,73 +136,73 @@ function SignUpForm() {
   }
 
   return (
-    <Card className="bg-black border-none rounded-none">
-      <CardHeader>
-        <CardTitle className="text-2xl font-headline">Create a Patient Account</CardTitle>
-        <CardDescription>Sign up to access your health records and appointments.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid gap-4">
-          <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn || isGoogleSigningIn}>
-            {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isGoogleSigningIn ? 'Please wait...' : <><GoogleIcon /> Sign up with Google</>}
-          </Button>
+      <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
+        <CardHeader>
+          <CardTitle className="text-2xl font-headline">Create a Patient Account</CardTitle>
+          <CardDescription>Sign up to access your health records and appointments.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4">
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn || isGoogleSigningIn}>
+              {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isGoogleSigningIn ? 'Please wait...' : <><GoogleIcon /> Sign up with Google</>}
+            </Button>
 
-          <div className="relative my-2">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-black px-2 text-muted-foreground">
+                  Or sign up with email
+                </span>
+              </div>
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-black px-2 text-muted-foreground">
-                Or sign up with email
-              </span>
+            <form onSubmit={handleEmailSignUp} className="grid gap-4">
+              <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="first-name">First Name</Label>
+                <Input id="first-name" name="first-name" placeholder="John" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="last-name">Last Name</Label>
+                <Input id="last-name" name="last-name" placeholder="Doe" required />
+              </div>
             </div>
-          </div>
-          <form onSubmit={handleEmailSignUp} className="grid gap-4">
-            <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="first-name">First Name</Label>
-              <Input id="first-name" name="first-name" placeholder="John" required />
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+              />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="last-name">Last Name</Label>
-              <Input id="last-name" name="last-name" placeholder="Doe" required />
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" required />
             </div>
+            <Button type="submit" className="w-full" disabled={isSigningIn || isGoogleSigningIn}>
+              {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSigningIn ? 'Creating Account...' : 'Create Account'}
+            </Button>
+            </form>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="m@example.com"
-              required
-            />
+          <div className="mt-4 text-center text-sm">
+            Already have an account?{" "}
+            <Link href="/login" className="underline">
+              Log in
+            </Link>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input id="password" name="password" type="password" required />
-          </div>
-          <Button type="submit" className="w-full" disabled={isSigningIn || isGoogleSigningIn}>
-            {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSigningIn ? 'Creating Account...' : 'Create Account'}
-          </Button>
-          </form>
-        </div>
-        <div className="mt-4 text-center text-sm">
-          Already have an account?{" "}
-          <Link href="/login" className="underline">
-            Log in
-          </Link>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
   )
 }
 
 function SignUpSkeleton() {
   return (
-    <Card className="bg-black border-none rounded-none">
+    <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
       <CardHeader>
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
@@ -263,3 +266,5 @@ export default function PatientSignUpPage() {
     </div>
   );
 }
+
+    

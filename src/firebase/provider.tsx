@@ -13,6 +13,8 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
+import { initializeFirebase } from './index';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface FirebaseContextValue {
   app: FirebaseApp | null;
@@ -26,9 +28,9 @@ const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefine
 
 interface FirebaseProviderProps {
   children: ReactNode;
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+  app: FirebaseApp | null;
+  auth: Auth | null;
+  firestore: Firestore | null;
 }
 
 export function FirebaseProvider({
@@ -41,6 +43,10 @@ export function FirebaseProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
@@ -83,18 +89,33 @@ export function useFirebase() {
 }
 
 export function useFirebaseApp() {
-  return useFirebase().app;
+  const context = useContext(FirebaseContext);
+   if (context === undefined) {
+    throw new Error('useFirebaseApp must be used within a FirebaseProvider');
+  }
+  return context.app;
 }
 
 export function useAuth() {
-  return useFirebase().auth;
+  const context = useContext(FirebaseContext);
+   if (context === undefined) {
+    throw new Error('useAuth must be used within a FirebaseProvider');
+  }
+  return context.auth;
 }
 
 export function useFirestore() {
-  return useFirebase().firestore;
+  const context = useContext(FirebaseContext);
+   if (context === undefined) {
+    throw new Error('useFirestore must be used within a FirebaseProvider');
+  }
+  return context.firestore;
 }
 
 export function useUser() {
-  const { user, loading } = useFirebase();
-  return { user, loading };
+  const context = useContext(FirebaseContext);
+  if (context === undefined) {
+    throw new Error('useUser must be used within a FirebaseProvider');
+  }
+  return { user: context.user, loading: context.loading };
 }

@@ -4,14 +4,16 @@ import { useState, useEffect } from 'react';
 import { onSnapshot, query, collection, getDocs, doc, getDoc, type DocumentData, type Query, type DocumentReference } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useFirestore } from '@/firebase/provider';
 
 export function useCollection<T>(q: Query | null) {
   const [data, setData] = useState<T[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const firestore = useFirestore();
 
   useEffect(() => {
-    if (!q) {
+    if (!q || !firestore) {
       setLoading(false);
       return;
     }
@@ -32,7 +34,7 @@ export function useCollection<T>(q: Query | null) {
     });
 
     return () => unsubscribe();
-  }, [q]); // Re-run effect if query changes
+  }, [q, firestore]); 
 
   return { data, loading, error };
 }
@@ -41,9 +43,10 @@ export function useDoc<T>(ref: DocumentReference | null) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const firestore = useFirestore();
 
   useEffect(() => {
-    if (!ref) {
+    if (!ref || !firestore) {
       setLoading(false);
       return;
     }
@@ -67,7 +70,7 @@ export function useDoc<T>(ref: DocumentReference | null) {
     });
 
     return () => unsubscribe();
-  }, [ref]);
+  }, [ref, firestore]);
 
   return { data, loading, error };
 }

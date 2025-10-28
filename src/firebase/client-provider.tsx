@@ -3,10 +3,18 @@
 import { initializeFirebase } from './index';
 import { FirebaseProvider } from './provider';
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 
 // This provider ensures Firebase is initialized only once on the client.
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
-  const firebaseInstances = initializeFirebase();
+  const [firebaseInstances, setFirebaseInstances] = useState(initializeFirebase());
+
+  useEffect(() => {
+    if (!firebaseInstances) {
+      setFirebaseInstances(initializeFirebase());
+    }
+  }, [firebaseInstances]);
+
 
   if (!firebaseInstances) {
     // This case should ideally not be hit on the client, but as a fallback.

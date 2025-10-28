@@ -19,12 +19,10 @@ type FirebaseInstances = {
 
 let firebaseInstances: FirebaseInstances | null = null;
 
-export function initializeFirebase(): FirebaseInstances {
+export function initializeFirebase(): FirebaseInstances | null {
   if (typeof window === 'undefined') {
     // On the server, we don't initialize Firebase.
-    // This is a client-side only setup.
-    // You can add server-side admin SDK initialization here if needed.
-    return null as any;
+    return null;
   }
 
   if (firebaseInstances) {

@@ -43,7 +43,7 @@ function ForgotPasswordDialog() {
         if (error) {
             toast({
                 title: 'Error',
-                description: error.message,
+                description: 'Could not send password reset email. Please try again.',
                 variant: 'destructive',
             });
         } else {
@@ -133,7 +133,7 @@ function LoginForm() {
             // New user, create profile as patient
             const result = await createUserInFirestore(user.uid, user.email!, user.displayName || 'New User', 'patient');
             if (!result.success) {
-                toast({ title: "Setup Error", description: result.message, variant: "destructive" });
+                toast({ title: "Setup Error", description: "Could not create your user profile. Please try again.", variant: "destructive" });
                 setIsGoogleSigningIn(false);
                 return;
             }
@@ -170,7 +170,7 @@ function LoginForm() {
     } else if (error) {
        toast({
           title: "Login Failed",
-          description: error.message,
+          description: "The email or password you entered is incorrect. Please try again.",
           variant: "destructive",
         });
     }
@@ -289,3 +289,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    

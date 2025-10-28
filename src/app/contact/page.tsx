@@ -63,7 +63,7 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="bg-zinc-950 text-zinc-100 selection:bg-zinc-700 selection:text-white overflow-x-hidden">
+    <div className="bg-zinc-950 text-zinc-100 overflow-x-hidden">
       
       <header className="fixed top-0 z-50 w-full bg-black/60 backdrop-blur-lg border-b border-dashed border-white/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -153,7 +153,7 @@ export default function ContactPage() {
                     {contactOptions.map(option => (
                         <div key={option.id} className={`transition-all duration-500 ease-in-out ${activeTab === option.id ? 'opacity-100 visible' : 'opacity-0 invisible absolute inset-0'}`}>
                             {option.id === 'form' && (
-                                <div className="bg-zinc-900/50 p-8 rounded-2xl border border-dashed border-zinc-800/80 backdrop-blur-sm">
+                                <div className="bg-zinc-900/50 p-8 backdrop-blur-sm">
                                     <h2 className="text-2xl font-headline font-semibold text-white mb-6">Send us a Message</h2>
                                     <ContactForm />
                                 </div>
@@ -217,3 +217,5 @@ export default function ContactPage() {
     </div>
   );
 }
+
+    
