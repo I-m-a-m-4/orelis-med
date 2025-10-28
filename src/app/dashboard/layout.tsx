@@ -1,6 +1,12 @@
+'use client';
 import type { ReactNode } from 'react';
-import ClientLayout from './client-layout';
+import { FirebaseClientProvider } from '@/firebase';
+import { DashboardProvider } from './provider';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <ClientLayout>{children}</ClientLayout>;
+  return (
+    <FirebaseClientProvider>
+      <DashboardProvider>{children}</DashboardProvider>
+    </FirebaseClientProvider>
+  );
 }
