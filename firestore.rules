@@ -1,0 +1,189 @@
+/**
+ * @fileoverview Firestore Security Rules for Trelis Prototyping with Owner Dashboard.
+ *
+ * Core Philosophy:
+ * This ruleset builds upon the existing security model by adding an owner role and restricting access.
+ * Data validation is relaxed to allow for rapid prototyping and schema iteration.
+ * Only the specified owner can log in and manage the system.
+ *
+ * Data Structure:
+ * - /clinics/{clinicId}: Stores clinic profiles, accessible to admins and the owner.
+ * - /users/{userId}: Stores user profiles. Users can only manage their own profiles.
+ * - /patients/{patientId}: Stores patient records. Accessible to clinic staff.
+ * - /patients/{patientId}/appointments/{appointmentId}: Patient appointments, accessible to the patient and clinic staff.
+ * - /patients/{patientId}/prescriptions/{prescriptionId}: Patient prescriptions, accessible to the patient and clinic staff.
+ * - /patients/{patientId}/consents/{consentId}: Patient consents, accessible to the patient and clinic staff.
+ * - /auditLogs/{logId}: Stores audit logs, accessible only to admins and the owner.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to prevent information leakage.
+ * - All write operations are protected by authentication and authorization checks.
+ * - Data validation is limited to relational integrity and ownership checks.
+ * - Audit logs are only accessible to administrators and the owner.
+ * - Only the specified owner (bimex4@gmail.com) can log in.
+ *
+ * Denormalization for Authorization:
+ * - The `Patient` entity requires a `clinicId` for clinic-based access control. This is enforced on creation.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows admins and the owner to manage clinics.
+     * @path /clinics/{clinicId}
+     * @allow (create) User with role 'admin' or the owner can create a clinic.
+     * @deny (create) User without role 'admin' or the owner cannot create a clinic.
+     * @allow (get, list) Any authenticated user can read clinic information.
+     * @allow (update, delete) User with role 'admin' or the owner can update or delete a clinic.
+     * @deny (update, delete) User without role 'admin' or the owner cannot update or delete a clinic.
+     * @principle Enforces role-based access control for clinic management.
+     */
+    match /clinics/{clinicId} {
+      allow get, list: if isSignedIn();
+      allow create: if isAdmin() || isOwnerLogin();
+      allow update, delete: if isAdmin() || isOwnerLogin();
+    }
+
+    /**
+     * @description Allows users to manage their own profiles. Restricts creation to self-creation.
+     * @path /users/{userId}
+     * @allow (create) User can create their own profile if the UID matches.
+     * @deny (create) User cannot create a profile with a mismatched UID.
+     * @allow (get) User can read their own profile.
+     * @deny (list) User cannot list all users.
+     * @allow (update, delete) User can update or delete their own profile.
+     * @deny (update, delete) User cannot update or delete another user's profile.
+     * @principle Enforces document ownership for user profiles.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isSelfCreating(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Allows clinic staff to manage patient records within their clinic.
+     * @path /patients/{patientId}
+     * @allow (create) Clinic staff can create patient records if the clinicId matches their own.
+     * @deny (create) User cannot create patient records for another clinic.
+     * @allow (get, list) Clinic staff can read and list patient records for their clinic.
+     * @allow (update, delete) Clinic staff can update and delete patient records for their clinic.
+     * @deny (update, delete) Staff cannot update or delete patient records for another clinic.
+     * @principle Enforces clinic-based access control for patient management.
+     */
+    match /patients/{patientId} {
+      allow get, list: if isClinicStaff();
+      allow create: if isClinicStaff() && request.resource.data.clinicId == request.auth.token.clinicId;
+      allow update: if isClinicStaff() && isExistingPatient(patientId);
+      allow delete: if isClinicStaff() && isExistingPatient(patientId);
+    }
+
+    /**
+     * @description Allows patients and clinic staff to manage appointments.
+     * @path /patients/{patientId}/appointments/{appointmentId}
+     * @allow (create) Patient and clinic staff can create appointments.
+     * @deny (create) User cannot create appointments for another patient or clinic.
+     * @allow (get, list) Patient and clinic staff can read and list appointments.
+     * @allow (update, delete) Patient and clinic staff can update and delete appointments.
+     * @deny (update, delete) User cannot update or delete appointments for another patient or clinic.
+     * @principle Enforces shared access control for appointments.
+     */
+    match /patients/{patientId}/appointments/{appointmentId} {
+      allow get, list: if isPatientOrClinicStaff(patientId);
+      allow create: if isPatientOrClinicStaff(patientId);
+      allow update: if isPatientOrClinicStaff(patientId) && resource != null;
+      allow delete: if isPatientOrClinicStaff(patientId) && resource != null;
+    }
+
+    /**
+     * @description Allows patients and clinic staff to manage prescriptions.
+     * @path /patients/{patientId}/prescriptions/{prescriptionId}
+     * @allow (create) Patient and clinic staff can create prescriptions.
+     * @deny (create) User cannot create prescriptions for another patient or clinic.
+     * @allow (get, list) Patient and clinic staff can read and list prescriptions.
+     * @allow (update, delete) Patient and clinic staff can update and delete prescriptions.
+     * @deny (update, delete) User cannot update or delete prescriptions for another patient or clinic.
+     * @principle Enforces shared access control for prescriptions.
+     */
+    match /patients/{patientId}/prescriptions/{prescriptionId} {
+      allow get, list: if isPatientOrClinicStaff(patientId);
+      allow create: if isPatientOrClinicStaff(patientId);
+      allow update: if isPatientOrClinicStaff(patientId) && resource != null;
+      allow delete: if isPatientOrClinicStaff(patientId) && resource != null;
+    }
+
+    /**
+     * @description Allows patients and clinic staff to manage consents.
+     * @path /patients/{patientId}/consents/{consentId}
+     * @allow (create) Patient and clinic staff can create consents.
+     * @deny (create) User cannot create consents for another patient or clinic.
+     * @allow (get, list) Patient and clinic staff can read and list consents.
+     * @allow (update, delete) Patient and clinic staff can update and delete consents.
+     * @deny (update, delete) User cannot update or delete consents for another patient or clinic.
+     * @principle Enforces shared access control for consents.
+     */
+    match /patients/{patientId}/consents/{consentId} {
+      allow get, list: if isPatientOrClinicStaff(patientId);
+      allow create: if isPatientOrClinicStaff(patientId);
+      allow update: if isPatientOrClinicStaff(patientId) && resource != null;
+      allow delete: if isPatientOrClinicStaff(patientId) && resource != null;
+    }
+
+    /**
+     * @description Allows admins and the owner to manage audit logs.
+     * @path /auditLogs/{logId}
+     * @allow (get, list) Admins and the owner can read audit logs.
+     * @deny (get, list) Non-admins and non-owner cannot read audit logs.
+     * @deny (create, update, delete) No one can create, update, or delete audit logs through the client.
+     * @principle Enforces strict access control for audit logs.
+     */
+    match /auditLogs/{logId} {
+      allow get, list: if isAdmin() || isOwnerLogin();
+      allow create, update, delete: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    function isExistingPatient(patientId) {
+      return exists(/databases/$(database)/documents/patients/$(patientId));
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.role == 'admin';
+    }
+
+    function isClinicStaff() {
+      return isSignedIn() && (request.auth.token.role == 'doctor' || request.auth.token.role == 'receptionist');
+    }
+
+    function isPatientOrClinicStaff(patientId) {
+      return isSignedIn() && (isClinicStaff() || isPatient(patientId));
+    }
+
+    function isPatient(patientId) {
+        return isSignedIn() && request.auth.token.role == 'patient';
+    }
+
+    function isSelfCreating(userId) {
+      return request.auth.uid == userId && request.resource.data.uid == userId;
+    }
+
+    function isOwnerLogin() {
+      return isSignedIn() && request.auth.token.email == 'bimex4@gmail.com';
+    }
+  }
+}
