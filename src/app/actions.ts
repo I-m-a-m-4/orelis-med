@@ -10,63 +10,6 @@ import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
 import type { UserRole } from '@/lib/types';
 
-// --- Create User in Firestore ---
-export async function createUserInFirestore(
-  uid: string, 
-  email: string, 
-  name: string, 
-  role: UserRole, 
-  clinicData?: { clinicName: string }
-) {
-  await initializeAdminApp();
-  const auth = getAuth();
-  const firestore = getFirestore();
-
-  try {
-    // Set role as a custom claim on the user
-    await auth.setCustomUserClaims(uid, { role });
-
-    let clinicId: string | undefined = undefined;
-
-    // If it's a clinic admin, create the clinic first
-    if (role === 'admin' && clinicData?.clinicName) {
-      const clinicRef = firestore.collection('clinics').doc();
-      await clinicRef.set({
-        name: clinicData.clinicName,
-        email: email,
-        phone: '',
-        address: '',
-        subscription: {
-          plan: 'trial',
-          status: 'trialing',
-          expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14-day trial
-        },
-      });
-      clinicId = clinicRef.id;
-    }
-
-    // Create the user profile in Firestore
-    await firestore.collection('users').doc(uid).set({
-      uid,
-      email,
-      name,
-      role,
-      status: 'active',
-      ...(clinicId && { clinicId }), // Conditionally add clinicId
-    });
-    
-    // Revalidate paths to ensure fresh data after creation
-    revalidatePath('/dashboard');
-    revalidatePath('/dashboard/staff');
-
-    return { success: true, message: 'User profile created successfully.' };
-
-  } catch (error: any) {
-    console.error("Error creating user profile in Firestore:", error);
-    return { success: false, message: `Failed to create user profile: ${error.message}` };
-  }
-}
-
 
 // --- Appointment Reminder ---
 export async function sendReminderAction(appointment: { patientName: string, appointmentTime: string, doctorName: string }) {

@@ -13,9 +13,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
-import { createUserInFirestore } from "@/app/actions";
 import type { UserProfile } from "@/lib/types";
 
 const GoogleIcon = () => (
@@ -108,37 +107,47 @@ function LoginForm() {
 
     if (userDoc.exists()) {
       const userProfile = userDoc.data() as UserProfile;
-      if (userProfile.role === 'patient') {
+      if (userProfile.role === 'patient' && !userProfile.patientId) {
         router.push('/dashboard/my-records');
       } else {
         router.push('/dashboard');
       }
     } else {
-      // This case might happen if Firestore profile creation failed after auth creation.
-      // For now, we'll redirect to dashboard and let AuthGuard handle it.
-      router.push('/dashboard');
+      // This case might happen if a user signs in with Google for the first time
+      // on the login page. We create a profile and direct them to the patient linking page.
+      router.push('/dashboard/my-records');
     }
   };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleSigningIn(true);
+    if (!firestore) {
+      toast({ title: "Error", description: "Firebase is not initialized.", variant: "destructive" });
+      setIsGoogleSigningIn(false);
+      return;
+    }
     const { user, error } = await signInWithGoogle();
     
-    if (user) {
-        // Check if user exists in Firestore
+    if (user && user.email && user.displayName) {
+      try {
         const userDocRef = doc(firestore, 'users', user.uid);
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-            // New user, create profile as patient
-            const result = await createUserInFirestore(user.uid, user.email!, user.displayName || 'New User', 'patient');
-            if (!result.success) {
-                toast({ title: "Setup Error", description: "Could not create your user profile. Please try again.", variant: "destructive" });
-                setIsGoogleSigningIn(false);
-                return;
-            }
+            await setDoc(userDocRef, {
+              uid: user.uid,
+              email: user.email,
+              name: user.displayName,
+              role: 'patient',
+              status: 'active',
+            });
         }
         await handleSuccessfulLogin(user.uid);
+      } catch (firestoreError: any) {
+        toast({ title: "Setup Error", description: "Could not create or check your user profile. Please try again.", variant: "destructive" });
+        setIsGoogleSigningIn(false);
+        return;
+      }
     } else if (error) {
        if (error.code === 'auth/popup-blocked') {
         toast({
@@ -178,7 +187,7 @@ function LoginForm() {
   }
 
   return (
-      <Card className="bg-black border-none rounded-none">
+      <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Login</CardTitle>
           <CardDescription>Enter your email below to login to your account</CardDescription>
@@ -236,7 +245,7 @@ function LoginForm() {
 
 function LoginSkeleton() {
   return (
-    <Card className="bg-black border-none rounded-none">
+    <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
         <CardHeader>
           <Skeleton className="h-8 w-24" />
           <Skeleton className="h-4 w-full max-w-sm" />
@@ -289,5 +298,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

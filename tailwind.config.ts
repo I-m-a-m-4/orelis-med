@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -106,12 +107,21 @@ export default {
             transform: 'translateY(0)',
             filter: 'blur(0px)',
           }
-        }
+        },
+        spin: {
+          from: {
+            transform: 'rotate(0deg)',
+          },
+          to: {
+            transform: 'rotate(360deg)',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-slide-in': 'fadeSlideIn 0.8s ease-out both',
+        'spin': 'spin 1s linear infinite',
       },
     },
   },

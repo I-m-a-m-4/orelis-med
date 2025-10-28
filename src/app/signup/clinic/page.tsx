@@ -11,40 +11,31 @@ import { createUserWithEmail } from "@/firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { createUserInFirestore } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+import { useFirestore, useFirebaseApp } from "@/firebase";
 import type { UserProfile } from "@/lib/types";
-import { updateProfile } from "firebase/auth";
+import { getAuth, updateProfile } from "firebase/auth";
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
+  const app = useFirebaseApp();
   const [isSigningIn, setIsSigningIn] = useState(false);
   
-  const handleSuccessfulLogin = async (userId: string) => {
-    if (!firestore) return;
-
-    const userDocRef = doc(firestore, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-
-    if (userDoc.exists()) {
-      const userProfile = userDoc.data() as UserProfile;
-      if (userProfile.role === 'patient') {
-        router.push('/dashboard/my-records');
-      } else {
-        router.push('/dashboard');
-      }
-    } else {
-      router.push('/dashboard');
-    }
+  const handleSuccessfulLogin = (userId: string) => {
+    router.push('/dashboard');
   };
 
 
   const handleEmailSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!firestore || !app) {
+      toast({ title: "Error", description: "Firebase is not initialized. Please try again.", variant: "destructive" });
+      return;
+    }
     setIsSigningIn(true);
 
     const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
@@ -55,21 +46,47 @@ function SignUpForm() {
     const { user, error } = await createUserWithEmail(email, password);
     
     if (user) {
-      await updateProfile(user, { displayName: adminName });
-      const result = await createUserInFirestore(user.uid, email, adminName, 'admin', { clinicName });
-       if (result.success) {
+      try {
+        await updateProfile(user, { displayName: adminName });
+
+        const clinicRef = doc(firestore, 'clinics', user.uid); // Use user UID as clinic ID for simplicity
+        await setDoc(clinicRef, {
+            name: clinicName,
+            email: email,
+            phone: '',
+            address: '',
+            subscription: {
+              plan: 'trial',
+              status: 'trialing',
+              expiryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14-day trial
+            },
+        });
+
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email,
+          name: adminName,
+          role: 'admin',
+          status: 'active',
+          clinicId: clinicRef.id,
+        });
+
         toast({
             title: "Account Created!",
             description: "Your clinic profile has been created.",
         });
         await handleSuccessfulLogin(user.uid);
-      } else {
-        toast({
+
+      } catch (firestoreError: any) {
+         toast({
             title: "Error setting up profile",
-            description: "An unexpected error occurred. Please try again.",
+            description: "Could not save clinic details. Please check your network and try again.",
             variant: "destructive",
         });
+        console.error("Firestore error:", firestoreError);
       }
+
     } else if (error) {
        toast({
             title: "Sign-up Failed",
@@ -171,5 +188,3 @@ export default function ClinicSignUpPage() {
     </div>
   );
 }
-
-    
