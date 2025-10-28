@@ -1,5 +1,4 @@
 
-
 'use client';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
@@ -52,12 +51,25 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && userProfile) {
-      // If user is staff but has no clinicId, redirect them
       if (userProfile.role !== 'patient' && !userProfile.clinicId) {
         router.push('/dashboard/staff');
       }
     }
   }, [isLoading, userProfile, router]);
+  
+  if (isLoading) {
+     return (
+        <div className="flex items-center justify-center h-screen bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-[250px]" />
+                    <Skeleton className="h-4 w-[200px]" />
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   return (
       <AuthGuard>
@@ -69,11 +81,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
             <div className="flex flex-col flex-1 min-w-0">
               <AppHeader />
               <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
-                {isLoading ? (
-                    <div className="flex items-center justify-center h-full">
-                        <Skeleton className="h-12 w-12 rounded-full" />
-                    </div>
-                ): children}
+                {children}
               </main>
             </div>
           </div>
@@ -82,5 +90,3 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       </AuthGuard>
   );
 }
-
-    

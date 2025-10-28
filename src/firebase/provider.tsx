@@ -1,3 +1,4 @@
+
 // src/firebase/provider.tsx
 'use client';
 
@@ -13,8 +14,6 @@ import { onAuthStateChanged, type User } from 'firebase/auth';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { initializeFirebase } from './index';
-import { Skeleton } from '@/components/ui/skeleton';
 
 interface FirebaseContextValue {
   app: FirebaseApp | null;
@@ -80,42 +79,33 @@ export function FirebaseProvider({
   );
 }
 
-export function useFirebase() {
+// Custom hook to safely access Firebase context
+function useFirebaseContext() {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
-    throw new Error('useFirebase must be used within a FirebaseProvider');
+    throw new Error('useFirebase hook must be used within a FirebaseProvider');
   }
   return context;
 }
 
+
+export function useFirebase() {
+  return useFirebaseContext();
+}
+
 export function useFirebaseApp() {
-  const context = useContext(FirebaseContext);
-   if (context === undefined) {
-    throw new Error('useFirebaseApp must be used within a FirebaseProvider');
-  }
-  return context.app;
+  return useFirebaseContext().app;
 }
 
 export function useAuth() {
-  const context = useContext(FirebaseContext);
-   if (context === undefined) {
-    throw new Error('useAuth must be used within a FirebaseProvider');
-  }
-  return context.auth;
+  return useFirebaseContext().auth;
 }
 
 export function useFirestore() {
-  const context = useContext(FirebaseContext);
-   if (context === undefined) {
-    throw new Error('useFirestore must be used within a FirebaseProvider');
-  }
-  return context.firestore;
+  return useFirebaseContext().firestore;
 }
 
 export function useUser() {
-  const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a FirebaseProvider');
-  }
+  const context = useFirebaseContext();
   return { user: context.user, loading: context.loading };
 }
