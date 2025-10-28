@@ -56,8 +56,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     }
   }, [isLoading, userProfile, router, pathname]);
   
-  // This is the key fix: Do not render the children (the dashboard pages) until the user profile is fully loaded.
-  // This prevents any data-fetching hooks in child components from running with an incomplete user profile.
   if (isLoading || !userProfile) {
      return <LoadingAnimation />;
   }
@@ -80,3 +78,4 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         </SidebarProvider>
       </AuthGuard>
   );
+}
