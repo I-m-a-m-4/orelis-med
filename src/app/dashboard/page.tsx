@@ -1,3 +1,4 @@
+
 'use client';
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Activity, Users, Calendar, Stethoscope, User, ArrowRight, FileText } from "lucide-react";
@@ -9,6 +10,8 @@ import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
 import { collection, doc, query, where } from "firebase/firestore";
 import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+
+export const dynamic = 'force-dynamic';
 
 const AdminDashboard = () => {
     const firestore = useFirestore();
@@ -72,13 +75,18 @@ const PatientDashboard = () => {
     return (
          <div className="flex flex-col gap-4 md:gap-8">
             <h2 className="font-semibold text-lg md:text-xl">Welcome, {user?.displayName}!</h2>
-            <Card className='border-dashed'>
+             <Card className='border-dashed'>
                 <CardHeader>
                     <CardTitle>Your Health Portal</CardTitle>
-                    <CardDescription>Enter your hospital code to view your medical records.</CardDescription>
+                    <CardDescription>Access your medical records and manage your health information.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Feature coming soon.</p>
+                    <Button asChild>
+                        <Link href="/dashboard/my-records">
+                            <FileText className="mr-2"/>
+                            Go to My Records
+                        </Link>
+                    </Button>
                 </CardContent>
             </Card>
 
@@ -284,5 +292,3 @@ export default function DashboardPage() {
         </div>
     )
 }
-
-    

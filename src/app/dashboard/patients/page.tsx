@@ -14,6 +14,8 @@ import type { Patient } from "@/lib/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 
+export const dynamic = 'force-dynamic';
+
 export default function PatientsPage() {
     const firestore = useFirestore();
     const { user } = useUser();

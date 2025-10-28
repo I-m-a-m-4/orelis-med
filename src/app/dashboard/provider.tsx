@@ -2,7 +2,7 @@
 'use client';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarProvider, Sidebar } from '@/components/ui/sidebar';
@@ -43,6 +43,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
+  const pathname = usePathname();
   
   const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
   const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
@@ -51,13 +52,15 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && userProfile) {
-       if (userProfile.role === 'patient') {
+        // Allow access to the linking page if the patient is not yet linked
+       if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
         router.push('/dashboard/my-records');
-      } else if (userProfile.role !== 'patient' && !userProfile.clinicId) {
+       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
+         // Redirect staff to staff page if they have no clinic
         router.push('/dashboard/staff');
       }
     }
-  }, [isLoading, userProfile, router]);
+  }, [isLoading, userProfile, router, pathname]);
   
   if (isLoading) {
      return (

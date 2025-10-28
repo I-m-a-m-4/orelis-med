@@ -43,15 +43,16 @@ function SignUpForm() {
     const userDocRef = doc(firestore, 'users', userId);
     const userDoc = await getDoc(userDocRef);
 
-    if (userDoc.exists()) {
+    // For new patients, always redirect to link their clinic record
+    if (!userDoc.exists() || !userDoc.data()?.patientId) {
+      router.push('/dashboard/my-records');
+    } else {
       const userProfile = userDoc.data() as UserProfile;
-      if (userProfile.role === 'patient') {
+       if (userProfile.role === 'patient') {
         router.push('/dashboard/my-records');
       } else {
         router.push('/dashboard');
       }
-    } else {
-      router.push('/dashboard');
     }
   };
 
@@ -75,7 +76,7 @@ function SignUpForm() {
             return;
           }
       }
-      toast({ title: "Account Ready!", description: "You can now manage your appointments and records." });
+      toast({ title: "Account Ready!", description: "Please link your clinic to continue." });
       await handleSuccessfulLogin(user.uid);
 
     } else if (error) {
@@ -88,7 +89,7 @@ function SignUpForm() {
         } else if (error.code !== 'auth/cancelled-popup-request') {
           toast({
             title: "Sign-in Error",
-            description: "An unexpected error occurred during sign-in. Please try again.",
+            description: "An unexpected error occurred during sign-in.",
             variant: "destructive",
           });
         }
@@ -114,7 +115,7 @@ function SignUpForm() {
        if (result.success) {
         toast({
             title: "Account Created!",
-            description: "You can now manage your appointments and records.",
+            description: "Please link your clinic to continue.",
         });
         await handleSuccessfulLogin(user.uid);
       } else {
@@ -136,7 +137,7 @@ function SignUpForm() {
   }
 
   return (
-      <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
+      <Card className="bg-black border-none rounded-none">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Create a Patient Account</CardTitle>
           <CardDescription>Sign up to access your health records and appointments.</CardDescription>
@@ -266,5 +267,3 @@ export default function PatientSignUpPage() {
     </div>
   );
 }
-
-    

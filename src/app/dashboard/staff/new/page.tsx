@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
 
+export const dynamic = 'force-dynamic';
+
 const initialState: AddStaffFormState = {
   message: '',
   isSuccess: false,

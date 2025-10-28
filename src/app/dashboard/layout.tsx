@@ -1,4 +1,4 @@
-'use client';
+// src/app/dashboard/layout.tsx
 import type { ReactNode } from 'react';
 import { FirebaseClientProvider } from '@/firebase';
 import { DashboardProvider } from './provider';

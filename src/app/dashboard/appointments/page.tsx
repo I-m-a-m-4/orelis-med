@@ -13,6 +13,8 @@ import type { Appointment } from "@/lib/types";
 import { useState } from "react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
     if (loading) {
         return <p className="text-center text-muted-foreground py-12">Loading appointments...</p>;

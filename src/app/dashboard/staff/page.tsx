@@ -15,6 +15,8 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useDoc } from "@/firebase";
 
+export const dynamic = 'force-dynamic';
+
 export default function StaffPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();

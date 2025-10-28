@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/types';
 import { Building, CreditCard, Loader2 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
 
 const initialState: UpdateProfileFormState = {
   message: '',
