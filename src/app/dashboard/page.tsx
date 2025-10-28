@@ -11,16 +11,25 @@ import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 
-const AdminDashboard = () => {
+const AdminDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
 
-    const patientsCollection = useMemo(() => firestore ? collection(firestore, 'patients') : null, [firestore]);
+    const patientsCollection = useMemo(() => {
+        if (!firestore || !userProfile.clinicId) return null;
+        return query(collection(firestore, 'patients'), where("clinicId", "==", userProfile.clinicId));
+    }, [firestore, userProfile.clinicId]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsCollection);
 
-    const appointmentsCollection = useMemo(() => firestore ? collection(firestore, 'appointments') : null, [firestore]);
+    const appointmentsCollection = useMemo(() => {
+        if (!firestore || !userProfile.clinicId) return null;
+        return query(collection(firestore, 'appointments'), where("clinicId", "==", userProfile.clinicId));
+    }, [firestore, userProfile.clinicId]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
 
-    const staffQuery = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '!=', 'patient')) : null, [firestore]);
+    const staffQuery = useMemo(() => {
+        if (!firestore || !userProfile.clinicId) return null;
+        return query(collection(firestore, 'users'), where('role', '!=', 'patient'), where("clinicId", "==", userProfile.clinicId));
+    }, [firestore, userProfile.clinicId]);
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
     const doctors = staff?.filter(s => s.role === 'doctor');
@@ -36,31 +45,33 @@ const AdminDashboard = () => {
     );
 }
 
-const DoctorDashboard = () => {
+const DoctorDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
-    const { user } = useUser();
 
     const appointmentsQuery = useMemo(() => {
-        if (!user || !firestore) return null;
-        return query(collection(firestore, 'appointments'), where('doctorId', '==', user.uid));
-    }, [user, firestore]);
-    const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
+        if (!firestore || !userProfile.clinicId) return null;
+        return query(collection(firestore, 'appointments'), where("clinicId", "==", userProfile.clinicId), where("doctorId", "==", userProfile.uid));
+    }, [firestore, userProfile.clinicId, userProfile.uid]);
+    const { data: allAppointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
-    const upcomingAppointments = appointments?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled');
-    const myPatientIds = new Set(appointments?.map(p => p.patientId));
+    const myUpcomingAppointments = allAppointments?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled');
+    const myPatientIds = new Set(allAppointments?.map(p => p.patientId));
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-             <StatCard title="My Upcoming Appointments" value={appointmentsLoading ? '...' : (upcomingAppointments?.length || 0).toString()} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
+             <StatCard title="My Upcoming Appointments" value={appointmentsLoading ? '...' : (myUpcomingAppointments?.length || 0).toString()} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
              <StatCard title="My Assigned Patients" value={appointmentsLoading ? '...' : (myPatientIds.size).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
         </div>
     );
 }
 
-const ReceptionistDashboard = () => {
+const ReceptionistDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
 
-    const appointmentsCollection = useMemo(() => firestore ? collection(firestore, 'appointments') : null, [firestore]);
+    const appointmentsCollection = useMemo(() => {
+        if (!firestore || !userProfile.clinicId) return null;
+        return query(collection(firestore, 'appointments'), where("clinicId", "==", userProfile.clinicId));
+    }, [firestore, userProfile.clinicId]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsCollection);
     const todaysAppointments = appointments?.filter(a => new Date(a.appointmentDate).toDateString() === new Date().toDateString() && a.status === 'Scheduled');
 
@@ -75,14 +86,14 @@ const ReceptionistDashboard = () => {
     );
 }
 
-const PatientDashboard = () => {
+const PatientDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const { user } = useUser();
     const firestore = useFirestore();
     
     const appointmentsQuery = useMemo(() => {
-        if (!user || !firestore) return null;
-        return query(collection(firestore, 'appointments'), where('patientId', '==', user.uid));
-    }, [user, firestore]);
+        if (!firestore || !userProfile.patientId) return null;
+        return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
+    }, [firestore, userProfile.patientId]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     const upcomingAppointments = appointments?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled');
 
@@ -125,15 +136,16 @@ export default function DashboardPage() {
 
     const appointmentsQuery = useMemo(() => {
         if (!user || !userProfile || !firestore) return null;
-        if (userProfile.role === 'patient') return query(collection(firestore, 'appointments'), where('patientId', '==', user.uid));
-        if (userProfile.role === 'doctor') return query(collection(firestore, 'appointments'), where('doctorId', '==', user.uid));
-        return collection(firestore, 'appointments');
+        if (userProfile.role === 'patient' && userProfile.patientId) return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
+        if (userProfile.clinicId) return query(collection(firestore, 'appointments'), where('clinicId', '==', userProfile.clinicId));
+        return null;
     }, [user, userProfile, firestore]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
     const patientsQuery = useMemo(() => {
         if (!user || !userProfile || !firestore || userProfile.role === 'patient') return null;
-        return collection(firestore, 'patients');
+        if (userProfile.clinicId) return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+        return null;
     }, [user, userProfile, firestore]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
@@ -164,10 +176,10 @@ export default function DashboardPage() {
         }
 
         switch (userProfile.role) {
-            case 'admin': return <AdminDashboard />;
-            case 'doctor': return <DoctorDashboard />;
-            case 'receptionist': return <ReceptionistDashboard />;
-            case 'patient': return <PatientDashboard />;
+            case 'admin': return <AdminDashboard userProfile={userProfile} />;
+            case 'doctor': return <DoctorDashboard userProfile={userProfile} />;
+            case 'receptionist': return <ReceptionistDashboard userProfile={userProfile} />;
+            case 'patient': return <PatientDashboard userProfile={userProfile} />;
             default: return <p>Welcome to your Orelis dashboard.</p>;
         }
     }

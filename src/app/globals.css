@@ -82,6 +82,11 @@ body {
       border-color: transparent;
       box-shadow: 0 0 0 4px hsla(142, 76%, 36%, 0.1), 0 0 20px 5px hsla(142, 76%, 36%, 0.2);
   }
+
+  /* Glow effect for primary buttons on focus/active */
+  .button-glow:focus-visible, .button-glow:active {
+      box-shadow: 0 0 0 4px hsla(var(--primary), 0.1), 0 0 20px 5px hsla(var(--primary), 0.2);
+  }
 }
 
 /* Custom Scrollbar */
@@ -713,3 +718,4 @@ nav a:hover {
     
 
     
+

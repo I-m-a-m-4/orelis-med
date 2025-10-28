@@ -10,9 +10,6 @@ import { FirebaseClientProvider } from '@/firebase';
 export const metadata: Metadata = {
   title: 'Orelis — Modern Clinic Management Software',
   description: 'The ultimate platform for patient management, intelligent scheduling, and AI-powered insights. Streamline your clinic\'s workflow, reduce no-shows, and enhance patient care with Orelis.',
-  icons: {
-    icon: '/icon.png',
-  },
 };
 
 export default function RootLayout({

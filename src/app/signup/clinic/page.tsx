@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-import { Stethoscope, Loader2 } from "lucide-react";
+import { Stethoscope, Loader2, Building, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,23 +12,20 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useFirestore, useFirebaseApp } from "@/firebase";
-import type { UserProfile } from "@/lib/types";
-import { getAuth, updateProfile } from "firebase/auth";
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { updateProfile } from "firebase/auth";
 
 function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
   const app = useFirebaseApp();
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   
   const handleSuccessfulLogin = (userId: string) => {
     router.push('/dashboard');
   };
-
 
   const handleEmailSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,25 +33,29 @@ function SignUpForm() {
       toast({ title: "Error", description: "Firebase is not initialized. Please try again.", variant: "destructive" });
       return;
     }
-    setIsSigningIn(true);
+    setIsSigningUp(true);
 
-    const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
-    const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value;
-    const clinicName = (e.currentTarget.elements.namedItem('clinic-name') as HTMLInputElement).value;
-    const adminName = clinicName; 
-
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const clinicName = formData.get('clinic-name') as string;
+    const adminName = formData.get('admin-name') as string;
+    const phone = formData.get('phone') as string;
+    const address = formData.get('address') as string;
+    
     const { user, error } = await createUserWithEmail(email, password);
     
     if (user) {
       try {
         await updateProfile(user, { displayName: adminName });
 
-        const clinicRef = doc(firestore, 'clinics', user.uid); // Use user UID as clinic ID for simplicity
+        // Use the user's UID as the document ID for both the clinic and the user profile for simplicity
+        const clinicRef = doc(firestore, 'clinics', user.uid);
         await setDoc(clinicRef, {
             name: clinicName,
             email: email,
-            phone: '',
-            address: '',
+            phone: phone,
+            address: address,
             subscription: {
               plan: 'trial',
               status: 'trialing',
@@ -81,7 +82,7 @@ function SignUpForm() {
       } catch (firestoreError: any) {
          toast({
             title: "Error setting up profile",
-            description: "Could not save clinic details. Please check your network and try again.",
+            description: firestoreError.message || "Could not save clinic details. Please check your network and try again.",
             variant: "destructive",
         });
         console.error("Firestore error:", firestoreError);
@@ -90,12 +91,12 @@ function SignUpForm() {
     } else if (error) {
        toast({
             title: "Sign-up Failed",
-            description: "Could not create account. The email might be in use.",
+            description: error.message || "Could not create account. The email might be in use.",
             variant: "destructive",
         });
     }
 
-    setIsSigningIn(false);
+    setIsSigningUp(false);
   }
 
   return (
@@ -111,7 +112,11 @@ function SignUpForm() {
                 <Input name="clinic-name" id="clinic-name" placeholder="Sunshine Medical Center" required />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="admin-name">Your Full Name</Label>
+                <Input name="admin-name" id="admin-name" placeholder="Dr. John Doe" required />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="email">Administrator Email</Label>
                 <Input
                   id="email"
                   name="email"
@@ -120,13 +125,21 @@ function SignUpForm() {
                   required
                 />
               </div>
+               <div className="grid gap-2">
+                <Label htmlFor="phone">Clinic Phone Number</Label>
+                <Input name="phone" id="phone" placeholder="+1 (555) 123-4567" required />
+              </div>
+               <div className="grid gap-2">
+                <Label htmlFor="address">Clinic Address</Label>
+                <Input name="address" id="address" placeholder="123 Health St, Wellness City" required />
+              </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required />
+                <Input id="password" name="password" type="password" required minLength={6}/>
               </div>
-              <Button type="submit" className="w-full" disabled={isSigningIn}>
-                {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {isSigningIn ? 'Creating Account...' : 'Create Account'}
+              <Button type="submit" className="w-full button-glow" disabled={isSigningUp}>
+                {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSigningUp ? 'Creating Account...' : 'Create Account'}
               </Button>
           </form>
           <div className="mt-4 text-center text-sm">

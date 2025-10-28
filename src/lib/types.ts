@@ -28,6 +28,7 @@ export interface Patient {
   occupation: string;
   phone: string;
   email?: string;
+  notes?: string;
   nextOfKin: {
     name: string;
     relation: string;
@@ -35,9 +36,9 @@ export interface Patient {
     phone: string;
   };
   registrationDate: string; // ISO string
-  religion: string;
   lastVisit?: string; // ISO string
   status?: 'Active' | 'Inactive';
+  [key: string]: any; // Allow custom fields
 }
 
 

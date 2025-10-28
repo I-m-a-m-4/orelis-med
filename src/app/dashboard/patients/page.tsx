@@ -6,21 +6,27 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection } from "firebase/firestore";
+import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
-import type { Patient } from "@/lib/types";
+import type { Patient, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 
 export default function PatientsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
+     const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
     
     const patientsCollection = useMemo(() => {
-        if (!user || !firestore) return null;
-        return collection(firestore, 'patients');
-    }, [user, firestore]);
+        if (!user || !firestore || !userProfile?.clinicId) return null;
+        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+    }, [user, firestore, userProfile?.clinicId]);
+
     const { data: patients, loading } = useCollection<Patient>(patientsCollection);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<('Active' | 'Inactive')[]>([ 'Active', 'Inactive' ]);
@@ -142,7 +148,9 @@ export default function PatientsPage() {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem>View Details</DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/dashboard/patients/${patient.id}`}>View Details</Link>
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem>Edit</DropdownMenuItem>
                                             <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                                         </DropdownMenuContent>

@@ -1,7 +1,6 @@
 'use client';
-import { useActionState } from 'react';
-import { addPatientAction, type AddPatientFormState } from '@/app/actions';
-import { useEffect, useRef, useState } from 'react';
+
+import { useState, useMemo, type FormEvent } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,220 +8,348 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2, PlusIcon, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from 'next/navigation';
-import { useFormStatus } from 'react-dom';
+import { useUser, useFirestore, useDoc } from '@/firebase';
+import { collection, addDoc, doc } from 'firebase/firestore';
+import type { UserProfile } from '@/lib/types';
+import { Textarea } from '@/components/ui/textarea';
 
-const initialState: AddPatientFormState = {
-  message: '',
-  isSuccess: false,
+type CustomField = {
+    id: number;
+    key: string;
+    value: string;
+    type: 'text' | 'textarea';
 };
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending}>
-      {pending ? 'Saving...' : 'Save Patient Record'}
-    </Button>
-  );
-}
-
 export default function AddPatientPage() {
-  const router = useRouter();
-  const [state, formAction] = useActionState(addPatientAction, initialState);
-  const { toast } = useToast();
-  const formRef = useRef<HTMLFormElement>(null);
-  const [date, setDate] = useState<Date>();
+    const router = useRouter();
+    const { toast } = useToast();
+    const { user } = useUser();
+    const firestore = useFirestore();
 
-  useEffect(() => {
-    if (state.message) {
-      toast({
-        title: state.isSuccess ? 'Success!' : 'Error!',
-        description: state.message,
-        variant: state.isSuccess ? 'default' : 'destructive',
-      });
-      if (state.isSuccess) {
-        formRef.current?.reset();
-        setDate(undefined);
-        router.push('/dashboard/patients');
-      }
-    }
-  }, [state, toast, router]);
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const [dob, setDob] = useState<Date>();
+    const [isSaving, setIsSaving] = useState(false);
+    const [customFields, setCustomFields] = useState<CustomField[]>([]);
+
+    const handleAddCustomField = () => {
+        setCustomFields([...customFields, { id: Date.now(), key: '', value: '', type: 'text' }]);
+    };
+
+    const handleCustomFieldChange = (id: number, field: 'key' | 'value' | 'type', value: string) => {
+        const newCustomFields = customFields.map(cf => {
+            if (cf.id === id) {
+                return { ...cf, [field]: value };
+            }
+            return cf;
+        });
+        setCustomFields(newCustomFields);
+    };
+
+    const handleRemoveCustomField = (id: number) => {
+        setCustomFields(customFields.filter(cf => cf.id !== id));
+    };
+
+
+    const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setIsSaving(true);
+
+        if (!firestore || !userProfile?.clinicId) {
+            toast({
+                title: 'Error!',
+                description: 'Cannot identify clinic. Please ensure you are logged in correctly.',
+                variant: 'destructive',
+            });
+            setIsSaving(false);
+            return;
+        }
+
+        const formData = new FormData(event.currentTarget);
+        
+        const customData: Record<string, string> = {};
+        customFields.forEach(field => {
+            if (field.key) {
+                customData[field.key] = field.value;
+            }
+        });
+
+        const patientData = {
+            clinicId: userProfile.clinicId,
+            firstName: formData.get('firstName') as string,
+            surname: formData.get('surname') as string,
+            dob: dob?.toISOString() ?? '',
+            sex: formData.get('sex') as string,
+            maritalStatus: formData.get('maritalStatus') as string,
+            address: formData.get('address') as string,
+            phone: formData.get('phone') as string,
+            email: formData.get('email') as string,
+            occupation: formData.get('occupation') as string,
+            origin: formData.get('origin') as string,
+            tribe: formData.get('tribe') as string,
+            religion: formData.get('religion') as string,
+            notes: formData.get('notes') as string,
+            nextOfKin: {
+                name: formData.get('nextOfKinName') as string,
+                relation: formData.get('nextOfKinRelation') as string,
+                phone: formData.get('nextOfKinPhone') as string,
+                address: formData.get('nextOfKinAddress') as string,
+            },
+            registrationDate: new Date().toISOString(),
+            status: 'Active',
+            ...customData,
+        };
+        
+        try {
+            const patientsCollection = collection(firestore, 'patients');
+            await addDoc(patientsCollection, patientData);
+            toast({
+                title: 'Success!',
+                description: 'Patient record created successfully.',
+            });
+            router.push('/dashboard/patients');
+        } catch (error: any) {
+            console.error("Error adding patient:", error);
+            toast({
+                title: 'Error!',
+                description: 'Could not save patient record. ' + (error.message || ''),
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSaving(false);
+        }
+    };
   
-
   return (
     <div className="flex flex-col gap-4 noisy-bg">
         <div className="flex items-center">
             <h1 className="font-semibold text-lg md:text-2xl">Add New Patient</h1>
         </div>
-        <form ref={formRef} action={formAction}>
-            <Card className="border-dashed">
-                <CardHeader>
-                    <CardTitle>Patient Registration</CardTitle>
-                    <CardDescription>Fill out the form below to register a new patient.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Personal Information */}
-                    <Card className="border-dashed col-span-1 md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Personal Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Personal Information */}
+                <Card className="border-dashed md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Personal Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">First Name</Label>
+                            <Input id="firstName" name="firstName" placeholder="John" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="surname">Surname</Label>
+                            <Input id="surname" name="surname" placeholder="Doe" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="dob">Date of Birth</Label>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !dob && "text-muted-foreground"
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {dob ? format(dob, "PPP") : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                    mode="single"
+                                    selected={dob}
+                                    onSelect={setDob}
+                                    initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="sex">Sex</Label>
+                            <Select name="sex">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select sex" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Male">Male</SelectItem>
+                                    <SelectItem value="Female">Female</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                             <div className="space-y-2">
-                                <Label htmlFor="firstName">First Name</Label>
-                                <Input id="firstName" name="firstName" placeholder="John" />
-                                {state.errors?.firstName && <p className="text-sm font-medium text-destructive">{state.errors.firstName}</p>}
-                            </div>
+                            <Label htmlFor="maritalStatus">Marital Status</Label>
+                            <Select name="maritalStatus">
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select marital status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Single">Single</SelectItem>
+                                    <SelectItem value="Married">Married</SelectItem>
+                                    <SelectItem value="Divorced">Divorced</SelectItem>
+                                    <SelectItem value="Widowed">Widowed</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                             <div className="space-y-2">
-                                <Label htmlFor="surname">Surname</Label>
-                                <Input id="surname" name="surname" placeholder="Doe" />
-                                {state.errors?.surname && <p className="text-sm font-medium text-destructive">{state.errors.surname}</p>}
-                            </div>
+                            <Label htmlFor="occupation">Occupation</Label>
+                            <Input id="occupation" name="occupation" placeholder="e.g., Software Engineer" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                    {/* Contact Information */}
+                <Card className="border-dashed md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Contact Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input id="phone" name="phone" placeholder="+234..." />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email for Remote Access</Label>
+                            <Input id="email" name="email" type="email" placeholder="patient@example.com" />
+                        </div>
+                            <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="address">Address</Label>
+                            <Input id="address" name="address" placeholder="123 Main St, Anytown" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Other Information */}
+                <Card className="border-dashed md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Other Information</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="origin">State of Origin</Label>
+                            <Input id="origin" name="origin" placeholder="e.g., Lagos" />
+                        </div>
                             <div className="space-y-2">
-                                <Label htmlFor="dob">Date of Birth</Label>
-                                <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                        "w-full justify-start text-left font-normal",
-                                        !date && "text-muted-foreground"
-                                    )}
-                                    >
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0">
-                                    <Calendar
-                                        mode="single"
-                                        selected={date}
-                                        onSelect={setDate}
-                                        initialFocus
+                            <Label htmlFor="tribe">Tribe</Label>
+                            <Input id="tribe" name="tribe" placeholder="e.g., Yoruba" />
+                        </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="religion">Religion</Label>
+                            <Input id="religion" name="religion" placeholder="e.g., Christianity" />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="notes">General Notes</Label>
+                            <Textarea id="notes" name="notes" placeholder="e.g., Patient has a history of..." className="min-h-[150px]" />
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                {/* Next of Kin */}
+                <Card className="border-dashed md:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Next of Kin</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                            <Label htmlFor="nextOfKinName">Full Name</Label>
+                            <Input id="nextOfKinName" name="nextOfKinName" placeholder="Jane Doe" />
+                        </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="nextOfKinRelation">Relation</Label>
+                            <Input id="nextOfKinRelation" name="nextOfKinRelation" placeholder="Spouse" />
+                        </div>
+                            <div className="space-y-2">
+                            <Label htmlFor="nextOfKinPhone">Phone Number</Label>
+                            <Input id="nextOfKinPhone" name="nextOfKinPhone" placeholder="+234..." />
+                        </div>
+                            <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="nextOfKinAddress">Address</Label>
+                            <Input id="nextOfKinAddress" name="nextOfKinAddress" placeholder="123 Main St, Anytown" />
+                        </div>
+                    </CardContent>
+                </Card>
+                
+                {/* Custom Fields */}
+                <Card className="border-dashed col-span-1 md:col-span-2">
+                    <CardHeader className='flex-row items-center justify-between'>
+                        <div className="flex flex-col">
+                            <CardTitle className="text-lg">Custom Patient Data</CardTitle>
+                            <CardDescription className="text-sm">Add any extra information needed for this patient.</CardDescription>
+                        </div>
+                            <Button type="button" variant="outline" size="sm" onClick={handleAddCustomField}>
+                            <PlusIcon className="mr-2 h-4 w-4" />
+                            Add Field
+                        </Button>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-2">
+                        {customFields.map((field) => (
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start border-t border-dashed pt-4">
+                                    <div className="space-y-2 col-span-12 md:col-span-3">
+                                    <Label className="text-xs text-muted-foreground">Field Name</Label>
+                                    <Input 
+                                        placeholder="e.g., Blood Type" 
+                                        value={field.key}
+                                        onChange={(e) => handleCustomFieldChange(field.id, 'key', e.target.value)}
                                     />
-                                </PopoverContent>
-                                </Popover>
-                                <input type="hidden" name="dob" value={date?.toISOString() ?? ''} />
-                                {state.errors?.dob && <p className="text-sm font-medium text-destructive">{state.errors.dob}</p>}
+                                </div>
+                                <div className="space-y-2 col-span-12 md:col-span-9">
+                                    <Label className="text-xs text-muted-foreground">Field Value</Label>
+                                    {field.type === 'text' ? (
+                                        <Input 
+                                            placeholder="e.g., O+" 
+                                            value={field.value}
+                                            onChange={(e) => handleCustomFieldChange(field.id, 'value', e.target.value)}
+                                        />
+                                    ) : (
+                                        <Textarea 
+                                            placeholder="Enter details..." 
+                                            value={field.value}
+                                            onChange={(e) => handleCustomFieldChange(field.id, 'value', e.target.value)}
+                                            className="min-h-[150px]"
+                                        />
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-2 justify-self-end col-span-12">
+                                        <Select
+                                        value={field.type}
+                                        onValueChange={(value) => handleCustomFieldChange(field.id, 'type', value)}
+                                    >
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="text">Text</SelectItem>
+                                            <SelectItem value="textarea">Text Area</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveCustomField(field.id)}>
+                                        <Trash2 className="h-4 w-4"/>
+                                    </Button>
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="sex">Sex</Label>
-                                <Select name="sex">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select sex" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Male">Male</SelectItem>
-                                        <SelectItem value="Female">Female</SelectItem>
-                                        <SelectItem value="Other">Other</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="maritalStatus">Marital Status</Label>
-                                <Select name="maritalStatus">
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select marital status" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Single">Single</SelectItem>
-                                        <SelectItem value="Married">Married</SelectItem>
-                                        <SelectItem value="Divorced">Divorced</SelectItem>
-                                        <SelectItem value="Widowed">Widowed</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="occupation">Occupation</Label>
-                                <Input id="occupation" name="occupation" placeholder="e.g., Software Engineer" />
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                     {/* Contact Information */}
-                    <Card className="border-dashed col-span-1 md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Contact Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="phone">Phone Number</Label>
-                                <Input id="phone" name="phone" placeholder="+234..." />
-                                {state.errors?.phone && <p className="text-sm font-medium text-destructive">{state.errors.phone}</p>}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="email">Email Address</Label>
-                                <Input id="email" name="email" type="email" placeholder="patient@example.com" />
-                                {state.errors?.email && <p className="text-sm font-medium text-destructive">{state.errors.email}</p>}
-                            </div>
-                             <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="address">Address</Label>
-                                <Input id="address" name="address" placeholder="123 Main St, Anytown" />
-                                {state.errors?.address && <p className="text-sm font-medium text-destructive">{state.errors.address}</p>}
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Other Information */}
-                    <Card className="border-dashed col-span-1 md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Other Information</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="origin">State of Origin</Label>
-                                <Input id="origin" name="origin" placeholder="e.g., Lagos" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="tribe">Tribe</Label>
-                                <Input id="tribe" name="tribe" placeholder="e.g., Yoruba" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="religion">Religion</Label>
-                                <Input id="religion" name="religion" placeholder="e.g., Christianity" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                    
-                    {/* Next of Kin */}
-                    <Card className="border-dashed col-span-1 md:col-span-2">
-                        <CardHeader>
-                            <CardTitle className="text-lg">Next of Kin</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="nextOfKinName">Full Name</Label>
-                                <Input id="nextOfKinName" name="nextOfKinName" placeholder="Jane Doe" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="nextOfKinRelation">Relation</Label>
-                                <Input id="nextOfKinRelation" name="nextOfKinRelation" placeholder="Spouse" />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="nextOfKinPhone">Phone Number</Label>
-                                <Input id="nextOfKinPhone" name="nextOfKinPhone" placeholder="+234..." />
-                            </div>
-                             <div className="space-y-2 md:col-span-2">
-                                <Label htmlFor="nextOfKinAddress">Address</Label>
-                                <Input id="nextOfKinAddress" name="nextOfKinAddress" placeholder="123 Main St, Anytown" />
-                            </div>
-                        </CardContent>
-                    </Card>
-                </CardContent>
-
-                <CardContent>
-                   <div className="flex justify-end gap-2">
-                        <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-                        <SubmitButton />
-                    </div>
-                     {state.message && !state.isSuccess && (
-                        <p className="text-sm font-medium text-destructive mt-4">{state.message}</p>
-                    )}
-                </CardContent>
-            </Card>
+                        ))}
+                        {customFields.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No custom fields added.</p>}
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+                <Button variant="outline" type="button" onClick={() => router.back()} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving} className="button-glow">
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isSaving ? 'Saving...' : 'Save Patient Record'}
+                </Button>
+            </div>
         </form>
     </div>
   )

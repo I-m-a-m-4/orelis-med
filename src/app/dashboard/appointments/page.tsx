@@ -5,10 +5,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarPlus, ListFilter, User } from "lucide-react";
 import { AppointmentReminderButton } from "./appointment-reminder-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, where } from "firebase/firestore";
+import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
+import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
-import type { Appointment } from "@/lib/types";
+import type { Appointment, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 
@@ -53,10 +53,25 @@ export default function AppointmentsPage() {
     const { user } = useUser();
     const [activeTab, setActiveTab] = useState("upcoming");
 
-    const appointmentsQuery = useMemo(() => {
+    const userProfileRef = useMemo(() => {
         if (!user || !firestore) return null;
-        return query(collection(firestore, 'appointments'));
+        return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
+    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const appointmentsQuery = useMemo(() => {
+        if (!user || !firestore || !userProfile) return null;
+
+        // Different query based on user role
+        if (userProfile.role === 'patient') {
+            // Patients should query by their linked patientId
+            if (!userProfile.patientId) return null;
+            return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
+        } else {
+            // Staff can see all appointments
+             return query(collection(firestore, 'appointments'));
+        }
+    }, [user, firestore, userProfile]);
 
     const { data: allAppointments, loading } = useCollection<Appointment>(appointmentsQuery);
 
@@ -90,14 +105,16 @@ export default function AppointmentsPage() {
                         <DropdownMenuCheckboxItem>Patient</DropdownMenuCheckboxItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                    <Button size="sm" className="h-8 gap-1" asChild>
-                        <Link href="/dashboard/appointments/new">
-                            <CalendarPlus className="h-3.5 w-3.5" />
-                            <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
-                            Schedule Appointment
-                            </span>
-                        </Link>
-                    </Button>
+                     {userProfile?.role !== 'patient' && (
+                        <Button size="sm" className="h-8 gap-1" asChild>
+                            <Link href="/dashboard/appointments/new">
+                                <CalendarPlus className="h-3.5 w-3.5" />
+                                <span className="sr-only sm:not-sr-only sm:whitespace-nowrap">
+                                Schedule Appointment
+                                </span>
+                            </Link>
+                        </Button>
+                    )}
                 </div>
             </div>
             <div className="relative border border-dashed border-white/20 p-4 rounded-lg">
