@@ -9,7 +9,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import type { UserProfile, Clinic, Patient } from '@/lib/types';
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, getDocs } from 'firebase/firestore';
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent, useMemo } from "react";
 import { FileText, Link as LinkIcon, Barcode, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
@@ -21,12 +21,17 @@ export default function MyRecordsPage() {
     const { toast } = useToast();
     const router = useRouter();
 
-    const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
     const { data: userProfile, loading: profileLoading, error: profileError } = useDoc<UserProfile>(userProfileRef);
 
-    const { data: clinics, loading: clinicsLoading } = useCollection<Clinic>(
-        firestore ? collection(firestore, 'clinics') : null
-    );
+    const clinicsCollection = useMemo(() => {
+        if (!firestore) return null;
+        return collection(firestore, 'clinics');
+    }, [firestore]);
+    const { data: clinics, loading: clinicsLoading } = useCollection<Clinic>(clinicsCollection);
 
     const [isLinked, setIsLinked] = useState(false);
     const [isLinking, setIsLinking] = useState(false);

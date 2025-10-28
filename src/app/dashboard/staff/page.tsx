@@ -18,21 +18,22 @@ export default function StaffPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     
-    // Correctly fetch the user's profile to check their role
-    const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
-    // Correctly fetch only staff members by filtering out patients
-    const staffQuery = firestore 
-      ? query(collection(firestore, 'users'), where('role', '!=', 'patient')) 
-      : null;
+    const staffQuery = useMemo(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, 'users'), where('role', '!=', 'patient'));
+    }, [firestore]);
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
     const [roleFilter, setRoleFilter] = useState<string[]>(['admin', 'doctor', 'receptionist']);
 
     const filteredStaff = useMemo(() => {
         if (!staff) return [];
-        // The data is already pre-filtered by the query, so we just filter by the UI selection.
         return staff.filter(member => roleFilter.includes(member.role));
     }, [staff, roleFilter]);
 

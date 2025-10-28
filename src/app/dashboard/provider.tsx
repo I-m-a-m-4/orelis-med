@@ -1,7 +1,7 @@
 // src/app/dashboard/provider.tsx
 'use client';
 import type { ReactNode } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -45,7 +45,10 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   
-  const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
+  const userProfileRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
   const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
   const isLoading = userLoading || profileLoading;

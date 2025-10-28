@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { GrantInfiniteButton } from './grant-infinite-button';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
     const { user, loading } = useUser();
@@ -32,8 +32,12 @@ function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
 
 export default function SuperAdminPage() {
     const firestore = useFirestore();
-    const { data: clinics, loading: clinicsLoading } = useCollection<Clinic>(firestore ? collection(firestore, 'clinics') : null);
-    const { data: patients, loading: patientsLoading } = useCollection<Patient>(firestore ? collection(firestore, 'patients') : null);
+
+    const clinicsCollection = useMemo(() => firestore ? collection(firestore, 'clinics') : null, [firestore]);
+    const { data: clinics, loading: clinicsLoading } = useCollection<Clinic>(clinicsCollection);
+
+    const patientsCollection = useMemo(() => firestore ? collection(firestore, 'patients') : null, [firestore]);
+    const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsCollection);
 
     const paidSubscriptions = clinics?.filter(c => c.subscription?.plan === 'price_annual' && c.subscription?.status === 'active').length || 0;
     const trialSubscriptions = clinics?.filter(c => c.subscription?.plan === 'trial' && c.subscription?.status === 'trialing').length || 0;
@@ -97,7 +101,7 @@ export default function SuperAdminPage() {
                             </TableBody>
                         </Table>
                     </CardContent>
-                </Card>
+            </Card>
             </div>
         </SuperAdminAuthGuard>
     );

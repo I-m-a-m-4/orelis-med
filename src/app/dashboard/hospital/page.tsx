@@ -5,12 +5,16 @@ import { useUser, useDoc, useFirestore } from "@/firebase";
 import { doc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/types";
 import { Hospital, UserCog } from "lucide-react";
+import { useMemo } from "react";
 
 export default function HospitalPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
     
-    const userProfileRef = user ? doc(firestore, 'users', user.uid) : null;
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
     if (userLoading || profileLoading) {

@@ -9,7 +9,7 @@ import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
 import type { Appointment } from "@/lib/types";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 
 function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
@@ -53,7 +53,11 @@ export default function AppointmentsPage() {
     const { user } = useUser();
     const [activeTab, setActiveTab] = useState("upcoming");
 
-    const appointmentsQuery = user && firestore ? query(collection(firestore, 'appointments')) : null;
+    const appointmentsQuery = useMemo(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, 'appointments'));
+    }, [user, firestore]);
+
     const { data: allAppointments, loading } = useCollection<Appointment>(appointmentsQuery);
 
     const upcomingAppointments = allAppointments?.filter(a => new Date(a.appointmentDate) >= new Date() && a.status === 'Scheduled')

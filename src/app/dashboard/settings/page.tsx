@@ -1,5 +1,5 @@
 'use client';
-import { useActionState, useEffect, useRef } from 'react';
+import { useActionState, useEffect, useRef, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -75,7 +75,11 @@ function ProfileForm({ user }: { user: UserProfile }) {
 export default function SettingsPage() {
     const { user, loading: userLoading } = useUser();
     const firestore = useFirestore();
-    const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(user ? doc(firestore, 'users', user.uid) : null);
+    const userProfileRef = useMemo(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, 'users', user.uid);
+    }, [user, firestore]);
+    const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
     
     const isLoading = userLoading || profileLoading;
 

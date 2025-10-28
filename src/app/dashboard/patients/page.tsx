@@ -16,7 +16,12 @@ import { Input } from "@/components/ui/input";
 export default function PatientsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
-    const { data: patients, loading } = useCollection<Patient>(user && firestore ? collection(firestore, 'patients') : null);
+    
+    const patientsCollection = useMemo(() => {
+        if (!user || !firestore) return null;
+        return collection(firestore, 'patients');
+    }, [user, firestore]);
+    const { data: patients, loading } = useCollection<Patient>(patientsCollection);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<('Active' | 'Inactive')[]>([ 'Active', 'Inactive' ]);
 
