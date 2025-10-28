@@ -23,6 +23,10 @@
           "format": "email",
           "description": "The contact email address for the clinic."
         },
+        "country": {
+          "type": "string",
+          "description": "The country where the clinic is located."
+        },
         "staffCount": {
           "type": "number",
           "description": "The number of staff members at the clinic."
@@ -135,6 +139,10 @@
           "type": "string",
           "format": "email",
           "description": "The patient's email address."
+        },
+        "country": {
+          "type": "string",
+          "description": "The patient's country of residence."
         },
         "nextOfKin": {
           "type": "object",
@@ -375,11 +383,11 @@
       },
       "description": "Stores patient records."
     },
-    "/patients/{patientId}/appointments/{appointmentId}": {
+    "/appointments/{appointmentId}": {
       "schema": {
         "$ref": "#/entities/Appointment"
       },
-      "description": "Sub-collection for a patient's appointments."
+      "description": "Stores all appointments."
     },
     "/patients/{patientId}/prescriptions/{prescriptionId}": {
       "schema": {
@@ -401,3 +409,5 @@
     }
   }
 }
+
+    

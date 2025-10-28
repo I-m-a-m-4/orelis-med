@@ -1,3 +1,4 @@
+
 'use client';
 import { StatCard } from "@/components/dashboard/stat-card";
 import { Activity, Users, Calendar, Stethoscope, User, ArrowRight, FileText } from "lucide-react";
@@ -135,18 +136,21 @@ export default function DashboardPage() {
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
     const appointmentsQuery = useMemo(() => {
-        if (!user || !userProfile || !firestore) return null;
-        if (userProfile.role === 'patient' && userProfile.patientId) return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
-        if (userProfile.clinicId) return query(collection(firestore, 'appointments'), where('clinicId', '==', userProfile.clinicId));
+        if (!firestore || !userProfile?.clinicId) return null;
+        if (userProfile.role === 'patient' && userProfile.patientId) {
+             return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
+        }
+        if (userProfile.clinicId) {
+            return query(collection(firestore, 'appointments'), where('clinicId', '==', userProfile.clinicId));
+        }
         return null;
-    }, [user, userProfile, firestore]);
+    }, [firestore, userProfile]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
     const patientsQuery = useMemo(() => {
-        if (!user || !userProfile || !firestore || userProfile.role === 'patient') return null;
-        if (userProfile.clinicId) return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
-        return null;
-    }, [user, userProfile, firestore]);
+        if (!firestore || !userProfile?.clinicId) return null;
+        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
     const upcomingAppointments = appointments
@@ -156,8 +160,10 @@ export default function DashboardPage() {
 
     const recentPatients = patients?.sort((a,b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()).slice(0, 4);
 
+    const isLoading = userLoading || profileLoading;
+
     const renderDashboardByRole = () => {
-        if (profileLoading || !userProfile) {
+        if (isLoading || !userProfile) {
             return (
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                     {[...Array(4)].map((_, i) => (
@@ -184,7 +190,7 @@ export default function DashboardPage() {
         }
     }
 
-    if (userLoading || profileLoading) {
+    if (isLoading) {
          return (
              <div className="flex flex-col gap-4 md:gap-8 noisy-bg -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8">
                  <Skeleton className="h-8 w-48" />

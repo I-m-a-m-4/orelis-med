@@ -104,7 +104,7 @@ export default function PricingPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
                     {/* Plan 1: Starter */}
-                    <div className="relative overflow-hidden rounded-lg border border-dashed border-white/20 p-8 noisy-bg">
+                    <div className="relative overflow-hidden border border-dashed border-white/20 p-8 noisy-bg">
                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.03]"></div>
                         <div className="flex flex-col h-full justify-between">
                             <div>
@@ -117,12 +117,12 @@ export default function PricingPage() {
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> Basic Reporting</li>
                                 </ul>
                             </div>
-                            <Link href="#" className="contact-button mt-8 w-full text-center">Get Started</Link>
+                            <Link href="/signup" className="contact-button mt-8 w-full text-center">Get Started</Link>
                         </div>
                     </div>
 
                     {/* Plan 2: Pro (Featured) */}
-                    <div className="relative overflow-hidden rounded-lg border border-dashed border-emerald-400/50 p-8 noisy-bg card-glow">
+                    <div className="relative overflow-hidden border border-dashed border-emerald-400/50 p-8 noisy-bg card-glow">
                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.03]"></div>
                          <div className="absolute top-0 right-0 m-4">
                             <div className="rounded-full bg-emerald-400/10 px-3 py-1 text-sm font-medium text-emerald-300">Most Popular</div>
@@ -139,14 +139,14 @@ export default function PricingPage() {
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> Priority Support</li>
                                 </ul>
                             </div>
-                             <Link href="#" className="mt-8 inline-flex items-center justify-center overflow-hidden bg-white px-5 py-2.5 text-sm font-medium text-black transition w-full">
+                             <Link href="/signup" className="mt-8 inline-flex items-center justify-center overflow-hidden bg-white px-5 py-2.5 text-sm font-medium text-black transition w-full">
                                 Choose Plan
                             </Link>
                         </div>
                     </div>
 
                     {/* Plan 3: Enterprise */}
-                    <div className="relative overflow-hidden rounded-lg border border-dashed border-white/20 p-8 noisy-bg">
+                    <div className="relative overflow-hidden border border-dashed border-white/20 p-8 noisy-bg">
                          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,.7)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.03]"></div>
                         <div className="flex flex-col h-full justify-between">
                             <div>
@@ -160,7 +160,7 @@ export default function PricingPage() {
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> HIPAA Compliance</li>
                                 </ul>
                             </div>
-                            <Link href="#" className="contact-button mt-8 w-full text-center">Contact Sales</Link>
+                            <Link href="/contact" className="contact-button mt-8 w-full text-center">Contact Sales</Link>
                         </div>
                     </div>
 

@@ -45,7 +45,7 @@ const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
 const HomepageRollingGallery = () => {
   const galleryCylinderRef = useRef<HTMLDivElement>(null);
   const IMGS = [
-      "/nurse.jpg",
+        "/nurse.jpg",
       "https://images.unsplash.com/photo-1584515933487-779824d29309?q=80&w=800&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=800&auto=format&fit=crop",
       "/hospital.jpg",
@@ -56,177 +56,74 @@ const HomepageRollingGallery = () => {
   ];
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !galleryCylinderRef.current) return;
 
-    class HorizontalRollingGallery {
-        autoplay: boolean;
-        pauseOnHover: boolean;
-        images: string[];
-        cylinder: HTMLElement | null;
-        rotation: number;
-        isDragging: boolean;
-        dragStart: number;
-        dragFactor: number;
-        isSmallScreen: boolean;
-        cylinderWidth: number = 0;
-        faceCount: number = 0;
-        faceWidth: number = 0;
-        radius: number = 0;
-        animationFrameId?: number;
+    let galleryElement = galleryCylinderRef.current;
+    let rotation = 0;
+    let isDragging = false;
+    let dragStart = 0;
+    let velocity = -0.05; // Start with a slow auto-rotation
+    let animationFrameId: number;
 
-        constructor(container: HTMLElement, options: { autoplay?: boolean; pauseOnHover?: boolean; images?: string[] } = {}) {
-            this.autoplay = options.autoplay !== false;
-            this.pauseOnHover = options.pauseOnHover !== false;
-            this.images = options.images || [];
-            this.cylinder = container;
-            this.rotation = 0;
-            this.isDragging = false;
-            this.dragStart = 0;
-            this.dragFactor = 0.3;
-            this.isSmallScreen = window.innerWidth <= 640;
-            
-            if(this.cylinder) {
-                this.init();
-            }
-        }
-
-        init() {
-            this.updateDimensions();
-            this.createGalleryFaces();
-            if (this.autoplay) {
-                this.startAutoplay();
-            }
-            this.setupEventListeners();
-        }
-
-        updateDimensions() {
-            this.isSmallScreen = window.innerWidth <= 640;
-            this.cylinderWidth = this.isSmallScreen ? 1600 : 2400;
-            this.faceCount = this.images.length;
-            this.faceWidth = (this.cylinderWidth / this.faceCount) * 1.2;
-            this.radius = this.cylinderWidth / (2 * Math.PI);
-            if (this.cylinder) {
-                this.cylinder.style.width = `${this.cylinderWidth}px`;
-            }
-        }
-
-        createGalleryFaces() {
-            if (!this.cylinder) return;
-            this.cylinder.innerHTML = '';
-            this.images.forEach((url, i) => {
-                const face = document.createElement('div');
-                face.className = 'gallery-face-y group absolute flex items-center justify-center p-[4%]';
-                face.style.width = `${this.faceWidth}px`;
-                face.style.height = '400px';
-                face.style.transform = `rotateY(${(360 / this.faceCount) * i}deg) translateZ(${this.radius}px)`;
-
-                const glassFrame = document.createElement('div');
-                glassFrame.className = 'glass-frame flex items-center justify-center rounded-[24px] transition-transform duration-300 ease-out group-hover:scale-105 shadow-lg';
-                glassFrame.style.width = '280px';
-                glassFrame.style.height = '320px';
-                glassFrame.style.overflow = 'hidden';
-
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = 'Orelis themed image';
-                img.className = 'pointer-events-none h-full w-full rounded-[20px] object-cover';
-                img.draggable = false;
-
-                glassFrame.appendChild(img);
-                face.appendChild(glassFrame);
-                this.cylinder!.appendChild(face);
-            });
-        }
-
-        updateRotation() {
-            if (!this.cylinder) return;
-            this.cylinder.style.transform = `rotateY(${this.rotation}deg)`;
-        }
-
-        startAutoplay() {
-            if (!this.cylinder) return;
-            this.cylinder.classList.add('gallery-spinning-y');
-        }
-
-        stopAutoplay() {
-            if (!this.cylinder) return;
-            this.cylinder.classList.remove('gallery-spinning-y');
-        }
-
-        setupEventListeners() {
-            if (!this.cylinder) return;
-            const parent = this.cylinder.parentElement;
-            if (!parent) return;
-
-            const handleMouseDown = (e: MouseEvent) => {
-                this.isDragging = true;
-                this.dragStart = e.clientX;
-                this.stopAutoplay();
-                e.preventDefault();
-            };
-            const handleMouseMove = (e: MouseEvent) => {
-                if (!this.isDragging) return;
-                const deltaX = e.clientX - this.dragStart;
-                this.rotation += deltaX * this.dragFactor;
-                this.updateRotation();
-                this.dragStart = e.clientX;
-            };
-            const handleMouseUp = () => {
-                if (!this.isDragging) return;
-                this.isDragging = false;
-                if (this.autoplay) {
-                    setTimeout(() => this.startAutoplay(), 100);
-                }
-            };
-
-            const handleTouchStart = (e: TouchEvent) => {
-                this.isDragging = true;
-                this.dragStart = e.touches[0].clientX;
-                this.stopAutoplay();
-            };
-            const handleTouchMove = (e: TouchEvent) => {
-                if (!this.isDragging) return;
-                const deltaX = e.touches[0].clientX - this.dragStart;
-                this.rotation += deltaX * this.dragFactor;
-                this.updateRotation();
-                this.dragStart = e.touches[0].clientX;
-            };
-            const handleTouchEnd = () => {
-                if (!this.isDragging) return;
-                this.isDragging = false;
-                if (this.autoplay) {
-                    setTimeout(() => this.startAutoplay(), 100);
-                }
-            };
-            
-            parent.addEventListener('mousedown', handleMouseDown);
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
-            parent.addEventListener('touchstart', handleTouchStart, { passive: true });
-            document.addEventListener('touchmove', handleTouchMove, { passive: true });
-            document.addEventListener('touchend', handleTouchEnd);
-
-            if (this.pauseOnHover) {
-                parent.addEventListener('mouseenter', () => {
-                    if (this.autoplay) this.stopAutoplay();
-                });
-                parent.addEventListener('mouseleave', () => {
-                    if (this.autoplay && !this.isDragging) this.startAutoplay();
-                });
-            }
-        }
-    }
+    const faceCount = IMGS.length;
     
-    const galleryElement = galleryCylinderRef.current;
-    let gallery: HorizontalRollingGallery | null = null;
-    if (galleryElement && IMGS.length > 0) {
-      gallery = new HorizontalRollingGallery(galleryElement, {
-          autoplay: true,
-          pauseOnHover: true,
-          images: IMGS
-      });
-    }
+    // Adjust circumference based on window width to prevent overlap
+    const getCircumference = () => window.innerWidth <= 640 ? 2200 : 2400;
 
+    const updateGallery = () => {
+      if (!isDragging) {
+        rotation += velocity;
+        velocity *= 0.95; // Apply friction to slow down
+        if (Math.abs(velocity) < 0.01) {
+            velocity = -0.05; // Re-apply auto-rotation if it stops
+        }
+      }
+      if (galleryElement) {
+        galleryElement.style.transform = `rotateY(${rotation}deg)`;
+      }
+      animationFrameId = requestAnimationFrame(updateGallery);
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      isDragging = true;
+      dragStart = e.clientX;
+      velocity = 0; // Stop auto-rotation on drag
+      if (galleryElement) {
+        galleryElement.style.transition = 'none';
+        galleryElement.style.cursor = 'grabbing';
+      }
+      if(animationFrameId) cancelAnimationFrame(animationFrameId);
+      updateGallery();
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isDragging) return;
+      const deltaX = e.clientX - dragStart;
+      rotation += deltaX * 0.2; // Drag speed factor
+      velocity = deltaX * 0.1; // Set velocity for inertia
+      dragStart = e.clientX;
+    };
+
+    const handleMouseUp = () => {
+      isDragging = false;
+      if (galleryElement) {
+        galleryElement.style.cursor = 'grab';
+      }
+    };
+
+    const parent = galleryElement.parentElement?.parentElement?.parentElement;
+    parent?.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    
+    updateGallery();
+
+    return () => {
+      parent?.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [IMGS]);
 
   return (
@@ -239,7 +136,20 @@ const HomepageRollingGallery = () => {
             <div className="absolute left-0 top-0 w-[120px] h-full z-20 gradient-left pointer-events-none"></div>
             <div className="absolute right-0 top-0 w-[120px] h-full z-20 gradient-right pointer-events-none"></div>
             <div className="flex w-full h-[400px] items-center justify-center gallery-container-y pointer-events-auto">
-              <div ref={galleryCylinderRef} id="galleryCylinderY" className="gallery-cylinder-y flex items-center justify-center"></div>
+              <div ref={galleryCylinderRef} id="galleryCylinderY" className="gallery-cylinder-y flex items-center justify-center" style={{cursor: 'grab'}}>
+                {IMGS.map((url, i) => {
+                  const circumference = window.innerWidth <= 640 ? 2200 : 2400;
+                  const radius = circumference / (2 * Math.PI);
+                  const angle = (360 / IMGS.length) * i;
+                  return (
+                    <div key={i} className='gallery-face-y group absolute flex items-center justify-center p-[4%]' style={{ transform: `rotateY(${angle}deg) translateZ(${radius}px)` }}>
+                      <div className="flex items-center justify-center rounded-[24px] transition-transform duration-300 ease-out group-hover:scale-105 shadow-lg" style={{ width: '280px', height: '320px', overflow: 'hidden' }}>
+                        <Image src={url} alt={`Orelis themed image ${i + 1}`} width={280} height={320} className="pointer-events-none h-full w-full object-cover" draggable="false" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </div>
@@ -326,7 +236,7 @@ export default function LandingPage() {
                 Login
               </Link>
                <Button asChild className="contact-button w-full justify-center">
-                <Link href="/signup">Sign Up</Link>
+                <Link href="/signup">Get Started</Link>
               </Button>
             </div>
           )}
@@ -369,8 +279,8 @@ export default function LandingPage() {
                     </p>
 
                     <div className="mt-8 flex flex-col items-center gap-3 [animation:fadeSlideIn_0.8s_ease-out_0.6s_both] sm:flex-row">
-                    <Link href="/pricing" className="contact-button">
-                        Request a Demo
+                    <Link href="/signup" className="contact-button">
+                        Get Started
                     </Link>
 
                     <Link
@@ -485,6 +395,10 @@ export default function LandingPage() {
         <section className="relative py-24">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="animate-on-scroll relative mt-6 overflow-hidden border border-dashed border-white/20 noisy-bg [animation:fadeSlideIn_0.8s_ease-out_0.1s_both]">
+                  <div className="relative p-8 sm:p-16 text-center">
+                    <h2 className="text-3xl font-light tracking-tighter text-white sm:text-4xl lg:text-5xl font-headline">A Visual Tour of Modern Healthcare</h2>
+                    <p className="mt-4 text-lg leading-8 text-zinc-300 max-w-2xl mx-auto">Explore glimpses of the clean, intuitive, and powerful interface that Orelis brings to clinics and patients alike.</p>
+                  </div>
                 <HomepageRollingGallery />
               </div>
             </div>
@@ -636,7 +550,7 @@ export default function LandingPage() {
                           </ul>
 
                           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                            <Link href="/contact" className="contact-button">Request a Demo</Link>
+                            <Link href="/signup" className="contact-button">Get Started</Link>
                           </div>
                         </div>
                     </div>
@@ -672,8 +586,8 @@ export default function LandingPage() {
                   deliver exceptional patient care.
                 </p>
                 <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link href="/pricing" className="contact-button">
-                    Request a Demo
+                  <Link href="/signup" className="contact-button">
+                    Sign Up Now
                   </Link>
                   <Link
                     href="/features"
@@ -693,3 +607,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    

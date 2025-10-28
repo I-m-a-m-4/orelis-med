@@ -12,6 +12,7 @@ export interface UserProfile {
   clinicId?: string;
   patientId?: string;
   status: 'pending' | 'active';
+  country?: string;
 }
 
 export interface Patient {
@@ -28,6 +29,7 @@ export interface Patient {
   occupation: string;
   phone: string;
   email?: string;
+  country?: string;
   notes?: string;
   nextOfKin: {
     name: string;
@@ -52,6 +54,7 @@ export interface Staff {
 
 export interface Appointment {
   id: string;
+  clinicId: string;
   patientId: string;
   patientName: string;
   doctorId: string;
@@ -80,6 +83,7 @@ export interface Clinic {
   address: string;
   phone: string;
   email: string;
+  country?: string;
   staffCount?: number;
   specialties?: string[];
   subscription?: {
@@ -89,3 +93,5 @@ export interface Clinic {
     expiryDate?: string; // ISO string
   };
 }
+
+    

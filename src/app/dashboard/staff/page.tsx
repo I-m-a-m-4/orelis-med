@@ -25,9 +25,9 @@ export default function StaffPage() {
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
     const staffQuery = useMemo(() => {
-        if (!firestore) return null;
-        return query(collection(firestore, 'users'), where('role', '!=', 'patient'));
-    }, [firestore]);
+        if (!firestore || !userProfile?.clinicId) return null;
+        return query(collection(firestore, 'users'), where('role', '!=', 'patient'), where('clinicId', '==', userProfile.clinicId));
+    }, [firestore, userProfile?.clinicId]);
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
     const [roleFilter, setRoleFilter] = useState<string[]>(['admin', 'doctor', 'receptionist']);
@@ -37,7 +37,9 @@ export default function StaffPage() {
         return staff.filter(member => roleFilter.includes(member.role));
     }, [staff, roleFilter]);
 
-    if (userLoading || profileLoading) {
+    const isLoading = userLoading || profileLoading || staffLoading;
+
+    if (isLoading) {
         return <div>Loading...</div>
     }
 
@@ -106,7 +108,7 @@ export default function StaffPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {staffLoading ? (
+                            {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center">Loading staff...</TableCell>
                                 </TableRow>

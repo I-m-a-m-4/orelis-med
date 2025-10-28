@@ -1,3 +1,4 @@
+
 // src/firebase/client-provider.tsx
 'use client';
 import { initializeFirebase } from './index';
@@ -7,7 +8,7 @@ import { useState, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
+import { LoadingAnimation } from '@/components/layout/loading-animation';
 
 type FirebaseInstances = {
   app: FirebaseApp;
@@ -31,17 +32,7 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
   if (!firebaseInstances) {
     // While Firebase is initializing, show a loading state instead of rendering children.
     // This prevents children from trying to access a null Firebase context.
-    return (
-       <div className="flex items-center justify-center h-screen bg-background">
-            <div className="flex flex-col items-center gap-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
-        </div>
-    );
+    return <LoadingAnimation />;
   }
 
   const { app, auth, firestore } = firebaseInstances;

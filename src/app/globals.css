@@ -24,7 +24,7 @@ body {
     --muted-foreground: 240 5% 64.9%;
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
@@ -80,7 +80,7 @@ body {
   }
   .animated-input-focus:focus-within {
       border-color: transparent;
-      box-shadow: 0 0 0 4px hsla(142, 76%, 36%, 0.1), 0 0 20px 5px hsla(142, 76%, 36%, 0.2);
+            box-shadow: 0 0 0 4px hsla(142, 76%, 36%, 0.1), 0 0 20px 5px hsla(142, 76%, 36%, 0.2);
   }
 
   /* Glow effect for primary buttons on focus/active */
@@ -541,7 +541,6 @@ nav a:hover {
     position: absolute;
     inset: -1px;
     border-radius: 1rem;
-    rotate: 0deg;
     overflow: hidden;
     mask: linear-gradient(white, transparent 70%);
     animation: flip calc(var(--spark) * 2) infinite steps(2, end);
@@ -550,7 +549,7 @@ nav a:hover {
 
 @keyframes flip {
     to {
-        rotate: 360deg;
+        transform: rotate(360deg);
     }
 }
 
@@ -559,19 +558,17 @@ nav a:hover {
     position: absolute;
     width: 200%;
     aspect-ratio: 1;
-    top: 0%;
+    top: 50%;
     left: 50%;
     z-index: -1;
-    translate: -50% -15%;
-    rotate: 0;
-    transform: rotate(-90deg);
+    translate: -50% -50%;
     background: conic-gradient(from 0deg, transparent 0 340deg, hsl(var(--primary)) 360deg);
     animation: rotate var(--spark) linear infinite both;
 }
 
 @keyframes rotate {
     to {
-        transform: rotate(90deg);
+        transform: rotate(360deg);
     }
 }
 
@@ -715,7 +712,77 @@ nav a:hover {
     animation-play-state: paused;
 }
 
+/* Legal Pages Specific Styles */
+@keyframes word-appear {
+  0% {
+    opacity: 0;
+    transform: translateY(30px) scale(0.8);
+    filter: blur(10px);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(10px) scale(0.95);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes grid-draw {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0.15;
+  }
+}
+
+.legal-word {
+  display: inline-block;
+  opacity: 0;
+  margin: 0 0.1em;
+  transition: all 0.3s ease;
+  animation: word-appear 0.8s ease-out forwards;
+}
+
+.legal-word:hover {
+  color: hsl(var(--primary));
+  transform: translateY(-2px);
+}
+
+.grid-line {
+  stroke: hsl(var(--primary));
+  stroke-width: 0.5;
+  opacity: 0;
+  stroke-dasharray: 5 5;
+  stroke-dashoffset: 1000;
+  animation: grid-draw 2s ease-out forwards;
+}
+
+.detail-dot {
+  fill: hsl(var(--primary));
+  opacity: 0;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+.destructive {
+  background-color: var(--background);
+  border: 1px solid var(--destructive);
+}
+
+.destructive .group {
+  color: var(--destructive);
+}
     
 
     
+
 

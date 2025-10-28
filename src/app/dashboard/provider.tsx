@@ -1,3 +1,4 @@
+
 // src/app/dashboard/provider.tsx
 'use client';
 import type { ReactNode } from 'react';
@@ -10,7 +11,7 @@ import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/types';
-import { Skeleton } from '@/components/ui/skeleton';
+import { LoadingAnimation } from '@/components/layout/loading-animation';
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
@@ -23,17 +24,7 @@ function AuthGuard({ children }: { children: ReactNode }) {
   }, [user, loading, router]);
 
   if (loading || !user) {
-    return (
-        <div className="flex items-center justify-center h-screen bg-background">
-            <div className="flex flex-col items-center gap-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
-        </div>
-    );
+    return <LoadingAnimation />;
   }
 
   return <>{children}</>;
@@ -58,25 +49,17 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         // Allow access to the linking page if the patient is not yet linked
        if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
         router.push('/dashboard/my-records');
-       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
+       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff' && pathname !== '/dashboard/super-admin') {
          // Redirect staff to staff page if they have no clinic
         router.push('/dashboard/staff');
       }
     }
   }, [isLoading, userProfile, router, pathname]);
   
-  if (isLoading) {
-     return (
-        <div className="flex items-center justify-center h-screen bg-background">
-            <div className="flex flex-col items-center gap-4">
-                <Skeleton className="h-12 w-12 rounded-full" />
-                <div className="space-y-2">
-                    <Skeleton className="h-4 w-[250px]" />
-                    <Skeleton className="h-4 w-[200px]" />
-                </div>
-            </div>
-        </div>
-    );
+  // This is the key fix: Do not render the children (the dashboard pages) until the user profile is fully loaded.
+  // This prevents any data-fetching hooks in child components from running with an incomplete user profile.
+  if (isLoading || !userProfile) {
+     return <LoadingAnimation />;
   }
 
   return (
@@ -97,4 +80,3 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         </SidebarProvider>
       </AuthGuard>
   );
-}

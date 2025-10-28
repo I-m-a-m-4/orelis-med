@@ -163,7 +163,7 @@ export function Footer() {
                             </li>
                             <li>
                                 <Link
-                                href="#"
+                                href="/contact"
                                 className="text-sm text-zinc-400 transition hover:text-white"
                                 >
                                 Contact
@@ -177,18 +177,18 @@ export function Footer() {
                             © {currentYear} Orelis. All rights reserved.
                         </p>
                         <div className="flex items-center gap-6">
-                            <a
-                            href="#"
+                            <Link
+                            href="/privacy"
                             className="text-sm text-zinc-500 transition hover:text-white"
                             >
                             Privacy Policy
-                            </a>
-                            <a
-                            href="#"
+                            </Link>
+                            <Link
+                            href="/terms"
                             className="text-sm text-zinc-500 transition hover:text-white"
                             >
                             Terms of Service
-                            </a>
+                            </Link>
                         </div>
                         </div>
                     </div>
@@ -197,5 +197,3 @@ export function Footer() {
         </footer>
     );
 }
-
-    

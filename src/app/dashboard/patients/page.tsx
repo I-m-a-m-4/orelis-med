@@ -6,12 +6,13 @@ import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMe
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
-import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
 import type { Patient, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
+import { useDoc } from "@/firebase";
 
 export default function PatientsPage() {
     const firestore = useFirestore();
@@ -20,12 +21,12 @@ export default function PatientsPage() {
         if (!user || !firestore) return null;
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
-    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
     
     const patientsCollection = useMemo(() => {
-        if (!user || !firestore || !userProfile?.clinicId) return null;
+        if (!firestore || !userProfile?.clinicId) return null;
         return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
-    }, [user, firestore, userProfile?.clinicId]);
+    }, [firestore, userProfile?.clinicId]);
 
     const { data: patients, loading } = useCollection<Patient>(patientsCollection);
     const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +42,8 @@ export default function PatientsPage() {
             return matchesSearch && matchesStatus;
         });
     }, [patients, searchTerm, statusFilter]);
+    
+    const isLoading = loading || profileLoading;
 
     return (
         <div className="flex flex-col gap-4 noisy-bg">
@@ -119,7 +122,7 @@ export default function PatientsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {loading ? (
+                            {isLoading ? (
                                 <TableRow>
                                     <TableCell colSpan={6} className="text-center">Loading patients...</TableCell>
                                 </TableRow>

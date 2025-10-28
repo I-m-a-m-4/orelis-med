@@ -106,7 +106,7 @@ export function LoadingAnimation() {
                 filter: drop-shadow(0 0 25px rgba(110, 231, 183, 0.7));
             }
             36% {
-                border-bottom-color: #3b82f6; /* Blue color */
+                border-bottom-color: #3b82f6; /* Blue color. */
                 filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.6));
             }
             100% {

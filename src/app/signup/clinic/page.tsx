@@ -2,7 +2,7 @@
 'use client';
 
 import Link from "next/link";
-import { Stethoscope, Loader2, Building, Phone, MapPin } from "lucide-react";
+import { Stethoscope, Loader2, Building, Phone, MapPin, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
 import { useFirestore, useFirebaseApp } from "@/firebase";
 import { updateProfile } from "firebase/auth";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { countries } from "@/lib/countries";
 
 function SignUpForm() {
   const router = useRouter();
@@ -22,6 +24,7 @@ function SignUpForm() {
   const firestore = useFirestore();
   const app = useFirebaseApp();
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const handleSuccessfulLogin = (userId: string) => {
     router.push('/dashboard');
@@ -42,6 +45,7 @@ function SignUpForm() {
     const adminName = formData.get('admin-name') as string;
     const phone = formData.get('phone') as string;
     const address = formData.get('address') as string;
+    const country = formData.get('country') as string;
     
     const { user, error } = await createUserWithEmail(email, password);
     
@@ -56,6 +60,7 @@ function SignUpForm() {
             email: email,
             phone: phone,
             address: address,
+            country: country,
             subscription: {
               plan: 'trial',
               status: 'trialing',
@@ -100,8 +105,8 @@ function SignUpForm() {
   }
 
   return (
-      <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
-        <CardHeader>
+      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create a Clinic Account</CardTitle>
           <CardDescription>Join Orelis to start managing your practice.</CardDescription>
         </CardHeader>
@@ -134,8 +139,26 @@ function SignUpForm() {
                 <Input name="address" id="address" placeholder="123 Health St, Wellness City" required />
               </div>
               <div className="grid gap-2">
+                  <Label htmlFor="country">Country</Label>
+                  <Select name="country">
+                      <SelectTrigger id="country">
+                          <SelectValue placeholder="Select a country" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {countries.map(country => (
+                              <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+              </div>
+              <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" name="password" type="password" required minLength={6}/>
+                 <div className="relative">
+                    <Input id="password" name="password" type={showPassword ? "text" : "password"} required minLength={6}/>
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                    </button>
+                </div>
               </div>
               <Button type="submit" className="w-full button-glow" disabled={isSigningUp}>
                 {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -149,13 +172,13 @@ function SignUpForm() {
             </Link>
           </div>
         </CardContent>
-      </Card>
+      </div>
   )
 }
 
 function SignUpSkeleton() {
   return (
-    <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
+    <Card className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
       <CardHeader>
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
@@ -201,3 +224,5 @@ export default function ClinicSignUpPage() {
     </div>
   );
 }
+
+    

@@ -2,30 +2,21 @@
 'use client';
 
 import Link from "next/link";
-import { Stethoscope, Loader2 } from "lucide-react";
+import { Stethoscope, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { signInWithGoogle, createUserWithEmail } from "@/firebase/auth";
+import { createUserWithEmail } from "@/firebase/auth";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 import { updateProfile } from "firebase/auth";
-
-
-const GoogleIcon = () => (
-    <svg className="mr-2 h-4 w-4" version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"></path>
-        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"></path>
-        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"></path>
-        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"></path>
-        <path fill="none" d="M0 0h48v48H0z"></path>
-    </svg>
-);
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { countries } from "@/lib/countries";
 
 
 function SignUpForm() {
@@ -33,58 +24,11 @@ function SignUpForm() {
   const { toast } = useToast();
   const firestore = useFirestore();
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isGoogleSigningIn, setIsGoogleSigningIn] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   
   const handleSuccessfulLogin = (userId: string) => {
     // For new patients, always redirect to link their clinic record
     router.push('/dashboard/my-records');
-  };
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleSigningIn(true);
-    if (!firestore) {
-      toast({ title: "Error", description: "Firebase is not initialized.", variant: "destructive" });
-      setIsGoogleSigningIn(false);
-      return;
-    }
-    
-    const { user, error } = await signInWithGoogle();
-    if (user && user.email && user.displayName) {
-      try {
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (!userDoc.exists()) {
-            await setDoc(userDocRef, {
-              uid: user.uid,
-              email: user.email,
-              name: user.displayName,
-              role: 'patient',
-              status: 'active',
-            });
-        }
-        toast({ title: "Account Ready!", description: "Please link your clinic to continue." });
-        handleSuccessfulLogin(user.uid);
-      } catch (firestoreError: any) {
-        toast({ title: "Error", description: "Could not save user profile. Please try again.", variant: "destructive" });
-      }
-
-    } else if (error) {
-        if (error.code === 'auth/popup-blocked') {
-          toast({
-            title: "Popup Blocked",
-            description: "Your browser blocked the sign-in popup. Please allow popups for this site and try again.",
-            variant: "destructive",
-          });
-        } else if (error.code !== 'auth/cancelled-popup-request') {
-          toast({
-            title: "Sign-in Error",
-            description: "An unexpected error occurred during sign-in.",
-            variant: "destructive",
-          });
-        }
-    }
-    setIsGoogleSigningIn(false);
   };
 
   const handleEmailSignUp = async (e: FormEvent<HTMLFormElement>) => {
@@ -100,6 +44,7 @@ function SignUpForm() {
     const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value;
     const firstName = (e.currentTarget.elements.namedItem('first-name') as HTMLInputElement).value;
     const lastName = (e.currentTarget.elements.namedItem('last-name') as HTMLInputElement).value;
+    const country = (e.currentTarget.elements.namedItem('country') as HTMLInputElement).value;
     const fullName = `${firstName} ${lastName}`;
 
     const { user, error } = await createUserWithEmail(email, password);
@@ -114,6 +59,7 @@ function SignUpForm() {
             name: fullName,
             role: 'patient',
             status: 'active',
+            country: country,
         });
       
         toast({
@@ -140,28 +86,13 @@ function SignUpForm() {
   }
 
   return (
-      <Card className="bg-black border-none rounded-none">
-        <CardHeader>
+      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
+        <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create a Patient Account</CardTitle>
           <CardDescription>Sign up to access your health records and appointments.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isSigningIn || isGoogleSigningIn}>
-              {isGoogleSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isGoogleSigningIn ? 'Please wait...' : <><GoogleIcon /> Sign up with Google</>}
-            </Button>
-
-            <div className="relative my-2">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-black px-2 text-muted-foreground">
-                  Or sign up with email
-                </span>
-              </div>
-            </div>
             <form onSubmit={handleEmailSignUp} className="grid gap-4">
               <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
@@ -183,11 +114,29 @@ function SignUpForm() {
                 required
               />
             </div>
+             <div className="grid gap-2">
+                <Label htmlFor="country">Country</Label>
+                <Select name="country">
+                    <SelectTrigger id="country">
+                        <SelectValue placeholder="Select a country" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {countries.map(country => (
+                            <SelectItem key={country.code} value={country.name}>{country.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" required />
+               <div className="relative">
+                <Input id="password" name="password" type={showPassword ? "text" : "password"} required />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 flex items-center pr-3">
+                  {showPassword ? <EyeOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-muted-foreground" />}
+                </button>
+              </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isSigningIn || isGoogleSigningIn}>
+            <Button type="submit" className="w-full" disabled={isSigningIn}>
               {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSigningIn ? 'Creating Account...' : 'Create Account'}
             </Button>
@@ -200,29 +149,18 @@ function SignUpForm() {
             </Link>
           </div>
         </CardContent>
-      </Card>
+      </div>
   )
 }
 
 function SignUpSkeleton() {
   return (
-    <Card className="w-full max-w-md mx-auto bg-black border-none rounded-none">
+    <Card className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
       <CardHeader>
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-4 w-full" />
       </CardHeader>
       <CardContent className="grid gap-4">
-        <Skeleton className="h-10 w-full" />
-        <div className="relative my-2">
-          <div className="absolute inset-0 flex items-center">
-            <Skeleton className="h-px w-full" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-black px-2">
-              <Skeleton className="h-4 w-28" />
-            </span>
-          </div>
-        </div>
          <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Skeleton className="h-4 w-16" />
@@ -270,3 +208,5 @@ export default function PatientSignUpPage() {
     </div>
   );
 }
+
+    

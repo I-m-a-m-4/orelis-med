@@ -5,12 +5,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CalendarPlus, ListFilter, User } from "lucide-react";
 import { AppointmentReminderButton } from "./appointment-reminder-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useCollection, useDoc } from "@/firebase/firestore/use-collection";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
 import type { Appointment, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { useDoc } from "@/firebase";
 
 function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
     if (loading) {
@@ -57,21 +58,22 @@ export default function AppointmentsPage() {
         if (!user || !firestore) return null;
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
-    const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
     const appointmentsQuery = useMemo(() => {
-        if (!user || !firestore || !userProfile) return null;
+        if (!firestore || !userProfile) return null;
 
-        // Different query based on user role
         if (userProfile.role === 'patient') {
-            // Patients should query by their linked patientId
-            if (!userProfile.patientId) return null;
+            if (!userProfile.patientId) return null; // Patient not linked yet
             return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
-        } else {
-            // Staff can see all appointments
-             return query(collection(firestore, 'appointments'));
         }
-    }, [user, firestore, userProfile]);
+        
+        if (userProfile.clinicId) {
+            return query(collection(firestore, 'appointments'), where('clinicId', '==', userProfile.clinicId));
+        }
+
+        return null;
+    }, [firestore, userProfile]);
 
     const { data: allAppointments, loading } = useCollection<Appointment>(appointmentsQuery);
 
@@ -81,6 +83,8 @@ export default function AppointmentsPage() {
     const pastAppointments = allAppointments?.filter(a => new Date(a.appointmentDate) < new Date() && a.status === 'Completed');
     
     const cancelledAppointments = allAppointments?.filter(a => a.status === 'Cancelled');
+
+    const isLoading = loading || profileLoading;
 
     return (
         <div className="flex flex-col gap-4 noisy-bg">
@@ -125,13 +129,13 @@ export default function AppointmentsPage() {
                         <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
                     </TabsList>
                     <TabsContent value="upcoming">
-                        <AppointmentList appointments={upcomingAppointments || []} loading={loading} />
+                        <AppointmentList appointments={upcomingAppointments || []} loading={isLoading} />
                     </TabsContent>
                     <TabsContent value="past">
-                        <AppointmentList appointments={pastAppointments || []} loading={loading} />
+                        <AppointmentList appointments={pastAppointments || []} loading={isLoading} />
                     </TabsContent>
                     <TabsContent value="cancelled">
-                        <AppointmentList appointments={cancelledAppointments || []} loading={loading} />
+                        <AppointmentList appointments={cancelledAppointments || []} loading={isLoading} />
                     </TabsContent>
                 </Tabs>
             </div>

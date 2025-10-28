@@ -1,3 +1,4 @@
+
 'use client';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
@@ -66,6 +67,7 @@ export default function SuperAdminPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Clinic Name</TableHead>
+                                    <TableHead>Country</TableHead>
                                     <TableHead>Subscription Plan</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Patient Count</TableHead>
@@ -75,11 +77,12 @@ export default function SuperAdminPage() {
                             <TableBody>
                                 {clinicsLoading ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} className="text-center">Loading clinics...</TableCell>
+                                        <TableCell colSpan={6} className="text-center">Loading clinics...</TableCell>
                                     </TableRow>
                                 ) : clinics?.map(clinic => (
                                     <TableRow key={clinic.id}>
                                         <TableCell className="font-medium">{clinic.name}</TableCell>
+                                        <TableCell>{clinic.country}</TableCell>
                                         <TableCell>
                                              <Badge variant={clinic.subscription?.plan === 'infinite' ? 'default' : 'outline'}>
                                                 {clinic.subscription?.plan || 'N/A'}
@@ -106,3 +109,5 @@ export default function SuperAdminPage() {
         </SuperAdminAuthGuard>
     );
 }
+
+    
