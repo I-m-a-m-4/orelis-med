@@ -1,4 +1,4 @@
-
+// src/app/dashboard/provider.tsx
 'use client';
 import type { ReactNode } from 'react';
 import { useEffect } from 'react';
@@ -51,7 +51,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && userProfile) {
-      if (userProfile.role !== 'patient' && !userProfile.clinicId) {
+       if (userProfile.role === 'patient') {
+        router.push('/dashboard/my-records');
+      } else if (userProfile.role !== 'patient' && !userProfile.clinicId) {
         router.push('/dashboard/staff');
       }
     }
