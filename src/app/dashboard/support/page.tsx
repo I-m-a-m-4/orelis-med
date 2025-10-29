@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -90,15 +91,15 @@ export default function SupportPage() {
                 <h1 className="font-semibold text-lg md:text-2xl flex items-center gap-2"><LifeBuoy /> Support Center</h1>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+            <div className="grid grid-cols-1 gap-8 items-start max-w-4xl mx-auto w-full">
                 {/* AI Support Chat */}
-                <Card className="border-dashed">
+                <Card className="border-2 border-border/50 rounded-none">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Bot /> AI Assistant</CardTitle>
                         <CardDescription>Ask our AI assistant for help with any questions you have.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex flex-col h-[500px]">
-                        <ScrollArea className="flex-grow bg-muted/50 rounded-lg p-4 space-y-4" ref={scrollAreaRef}>
+                        <ScrollArea className="flex-grow bg-muted/50 p-4 space-y-4 rounded-none" ref={scrollAreaRef}>
                             <div className="flex items-start gap-3">
                                 <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
                                     <Bot size={18} />
@@ -138,20 +139,20 @@ export default function SupportPage() {
                         <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
                             <Input
                                 placeholder="Type your message..."
-                                className="flex-grow"
+                                className="flex-grow rounded-none"
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 disabled={isLoading}
                             />
-                            <Button type="submit" disabled={isLoading}>
-                                {isLoading ? <div className="loading-dots"><span/><span/><span/></div> : <Send size={18} />}
+                            <Button type="submit" isLoading={isLoading} className="rounded-none">
+                                <Send size={18} />
                             </Button>
                         </form>
                     </CardContent>
                 </Card>
 
                 {/* FAQ Section */}
-                <Card className="border-dashed">
+                <Card className="border-2 border-border/50 rounded-none">
                     <CardHeader>
                         <CardTitle>Frequently Asked Questions</CardTitle>
                         <CardDescription>Find answers to common questions below.</CardDescription>

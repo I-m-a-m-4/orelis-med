@@ -1,18 +1,58 @@
 'use client';
-import { PlusCircle, ListFilter, MoreHorizontal, UserCog } from "lucide-react";
+import { PlusCircle, ListFilter, MoreHorizontal, UserCog, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useUser, useFirestore } from "@/firebase/provider";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, doc, query, where } from "firebase/firestore";
-import type { UserProfile } from "@/lib/types";
+import type { UserProfile, UserRole } from "@/lib/types";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { useDoc } from "@/firebase";
+import { changeStaffRoleAction } from "@/app/actions";
+import { useToast } from "@/hooks/use-toast";
+
+function ChangeRoleSubMenu({ userId, clinicId }: { userId: string, clinicId: string }) {
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleRoleChange = async (newRole: UserRole) => {
+        setIsSubmitting(true);
+        const formData = new FormData();
+        formData.append('userId', userId);
+        formData.append('newRole', newRole);
+        formData.append('clinicId', clinicId);
+        
+        const result = await changeStaffRoleAction(formData);
+
+        toast({
+            title: result.success ? "Success" : "Error",
+            description: result.message,
+            variant: result.success ? "default" : "destructive",
+        });
+        setIsSubmitting(false);
+    };
+
+    return (
+        <DropdownMenuSub>
+            <DropdownMenuSubTrigger>Change Role</DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+                <DropdownMenuSubContent>
+                    <DropdownMenuRadioGroup onValueChange={(value) => handleRoleChange(value as UserRole)}>
+                        <DropdownMenuRadioItem value="doctor">Doctor</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="receptionist">Receptionist</DropdownMenuRadioItem>
+                        <DropdownMenuRadioItem value="admin">Admin</DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+        </DropdownMenuSub>
+    );
+}
+
 
 export default function StaffPage() {
     const { user, loading: userLoading } = useUser();
@@ -135,7 +175,8 @@ export default function StaffPage() {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem>Edit</DropdownMenuItem>
-                                            <DropdownMenuItem>Change Role</DropdownMenuItem>
+                                            {member.uid !== user?.uid && <ChangeRoleSubMenu userId={member.uid} clinicId={userProfile.clinicId!} />}
+                                            <DropdownMenuSeparator />
                                             <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
                                         </DropdownMenuContent>
                                         </DropdownMenu>

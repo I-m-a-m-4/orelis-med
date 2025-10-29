@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -32,7 +31,7 @@ const patientNavItems: NavItem[] = [
     { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['patient'] },
 ];
 
-const superAdminNav: NavItem = { href: '/dashboard/super-admin', label: 'Super Admin', icon: Shield, roles: [] };
+const superAdminNav: NavItem = { href: '/super-admin', label: 'Super Admin', icon: Shield, roles: [] };
 
 interface AppSidebarProps {
     userProfile: UserProfile | null;
@@ -63,8 +62,8 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
             {state === 'expanded' ? <OrelisLogo /> : <Stethoscope className="h-8 w-8 text-primary" />}
         </Link>
       </SidebarHeader>
-      <SidebarContent className="p-2">
-        <SidebarMenu className="mt-8">
+      <SidebarContent className="p-2 mt-8">
+        <SidebarMenu>
           {isLoading ? (
             <>
               <SidebarMenuSkeleton showIcon />
@@ -87,20 +86,6 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
                 </SidebarMenuButton>
               </SidebarMenuItem>
             ))
-          )}
-          {isSuperAdmin && (
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(superAdminNav.href)}
-                  tooltip={superAdminNav.label}
-                >
-                  <Link href={superAdminNav.href}>
-                    <superAdminNav.icon />
-                    <span>{superAdminNav.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
           )}
         </SidebarMenu>
       </SidebarContent>
@@ -130,10 +115,22 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
+            {isSuperAdmin && (
+             <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith(superAdminNav.href)}
+                  tooltip={superAdminNav.label}
+                >
+                  <Link href={superAdminNav.href}>
+                    <superAdminNav.icon />
+                    <span>{superAdminNav.label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+          )}
           </SidebarMenu>
       </SidebarFooter>
     </>
   );
 }
-
-    

@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A support chat AI agent for the Orelis platform.
@@ -30,7 +31,10 @@ export async function answerQuestion(input: SupportChatInput): Promise<SupportCh
 
 const supportChatPrompt = ai.definePrompt({
     name: 'supportChatPrompt',
-    input: { schema: SupportChatInputSchema },
+    input: { schema: z.object({
+        question: SupportChatInputSchema.shape.question,
+        history: z.string().optional().describe('A formatted string of the chat history.'),
+    }) },
     output: { schema: SupportChatOutputSchema },
     prompt: `You are an expert support agent for a clinic management application called Orelis. Your goal is to answer user questions based on the provided documentation and context about the app.
 
@@ -49,7 +53,7 @@ const supportChatPrompt = ai.definePrompt({
         2.  **Doctor**: Manages patient records, views appointments, and provides care.
         3.  **Receptionist**: Manages patient intake, schedules appointments, and handles front-desk operations.
         4.  **Patient**: Can view their own medical records and manage their appointments.
-    - **Super Admin**: There is a special, hardcoded super-admin role for the user with the email 'bimex4@gmail.com'. This user has oversight over all clinics on the platform.
+    - **Super Admin**: There is a special super-admin role with elevated privileges to manage all clinics on the platform. Access is granted via secure custom claims, not just by email.
     
     ## How to Answer:
     - Base your answers strictly on the provided JSON specification and context. Do not invent features or functionality.
@@ -59,14 +63,8 @@ const supportChatPrompt = ai.definePrompt({
 
     Here is the current conversation history. Use it to understand the context of the user's question.
     {{#if history}}
-    Chat History:
-    {{#each history}}
-      {{#if (eq this.role 'user')}}
-        User: {{{this.content}}}
-      {{else}}
-        AI: {{{this.content}}}
-      {{/if}}
-    {{/each}}
+      Chat History:
+      {{{history}}}
     {{/if}}
 
     Now, please answer the following question.
@@ -83,7 +81,13 @@ const supportChatFlow = ai.defineFlow(
     outputSchema: SupportChatOutputSchema,
   },
   async (input) => {
-    const {output} = await supportChatPrompt(input);
+    const historyText = input.history?.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content}`).join('\n');
+    
+    const {output} = await supportChatPrompt({
+        question: input.question,
+        history: historyText,
+    });
+    
     return output!;
   }
 );

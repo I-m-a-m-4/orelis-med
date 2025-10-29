@@ -1,30 +1,42 @@
-
 'use client';
+import * as React from 'react';
 import { useUser, useFirestore, useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { collection } from 'firebase/firestore';
-import type { Clinic, Patient } from '@/lib/types';
+import { collection, query, where } from 'firebase/firestore';
+import type { Clinic, Patient, UserProfile } from '@/lib/types';
 import { StatCard } from '@/components/dashboard/stat-card';
-import { Hospital, Users, BadgeDollarSign, Clock } from 'lucide-react';
+import { Hospital, Users, BadgeDollarSign, Clock, AreaChart } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { GrantInfiniteButton } from './grant-infinite-button';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
+import { LoadingAnimation } from '@/components/layout/loading-animation';
 
 function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
     const { user, loading } = useUser();
     const router = useRouter();
+    const [isAuthorized, setIsAuthorized] = React.useState(false);
 
-    useEffect(() => {
-        if (!loading && (!user || user.email !== 'bimex4@gmail.com')) {
-            router.push('/dashboard');
+    React.useEffect(() => {
+        if (!loading && user) {
+            user.getIdTokenResult().then(idTokenResult => {
+                if (idTokenResult.claims.superAdmin) {
+                    setIsAuthorized(true);
+                } else {
+                    router.push('/dashboard');
+                }
+            });
+        } else if (!loading && !user) {
+            router.push('/login');
         }
     }, [user, loading, router]);
 
 
-    if (loading || !user || user.email !== 'bimex4@gmail.com') {
-        return <div>Loading...</div>; // Or a proper skeleton loader
+    if (loading || !isAuthorized) {
+        return <LoadingAnimation />;
     }
 
     return <>{children}</>;
@@ -37,11 +49,41 @@ export default function SuperAdminPage() {
     const clinicsCollection = useMemo(() => firestore ? collection(firestore, 'clinics') : null, [firestore]);
     const { data: clinics, loading: clinicsLoading } = useCollection<Clinic>(clinicsCollection);
 
-    const patientsCollection = useMemo(() => firestore ? collection(firestore, 'patients') : null, [firestore]);
+    const patientsCollection = useMemo(() => firestore ? query(collection(firestore, 'patients')) : null, [firestore]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsCollection);
 
+    const usersCollection = useMemo(() => firestore ? query(collection(firestore, 'users'), where('role', '!=', 'patient')) : null, [firestore]);
+    const { data: staff, loading: staffLoading } = useCollection<UserProfile>(usersCollection);
+
+
+    const subscriptionData = useMemo(() => {
+        if (!clinics) return [];
+        const counts = clinics.reduce((acc, clinic) => {
+            const plan = clinic.subscription?.plan || 'N/A';
+            acc[plan] = (acc[plan] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        return Object.entries(counts).map(([name, total]) => ({ name, total }));
+
+    }, [clinics]);
+    
     const paidSubscriptions = clinics?.filter(c => c.subscription?.plan === 'price_annual' && c.subscription?.status === 'active').length || 0;
     const trialSubscriptions = clinics?.filter(c => c.subscription?.plan === 'trial' && c.subscription?.status === 'trialing').length || 0;
+    const patientRegistrationData = useMemo(() => {
+        if (!patients) return [];
+        const byMonth = patients.reduce((acc, patient) => {
+            const month = new Date(patient.registrationDate).toLocaleString('default', { month: 'short', year: 'numeric' });
+            acc[month] = (acc[month] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+
+        // Sort by date
+        return Object.entries(byMonth)
+            .map(([name, total]) => ({ name, total }))
+            .sort((a,b) => new Date(a.name).getTime() - new Date(b.name).getTime());
+    }, [patients]);
+
 
     return (
         <SuperAdminAuthGuard>
@@ -56,6 +98,59 @@ export default function SuperAdminPage() {
                     <StatCard title="Paid Subscriptions" value={clinicsLoading ? '...' : paidSubscriptions.toString()} icon={<BadgeDollarSign className="h-4 w-4 text-muted-foreground" />} />
                     <StatCard title="Trial Subscriptions" value={clinicsLoading ? '...' : trialSubscriptions.toString()} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
                 </div>
+                 <div className="grid gap-4 md:grid-cols-2">
+                    <Card className="border-dashed">
+                        <CardHeader>
+                            <CardTitle>Subscription Overview</CardTitle>
+                            <CardDescription>Distribution of clinics by subscription plan.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={subscriptionData}>
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3} />
+                                    <XAxis
+                                        dataKey="name"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                        tickFormatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)}
+                                    />
+                                    <YAxis />
+                                    <Tooltip
+                                        cursor={{ fill: 'hsl(var(--muted))' }}
+                                        content={<ChartTooltipContent indicator="dot" />}
+                                    />
+                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={4} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                     <Card className="border-dashed">
+                        <CardHeader>
+                            <CardTitle>Patient Registrations</CardTitle>
+                            <CardDescription>New patients registered per month.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={patientRegistrationData}>
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3} />
+                                    <XAxis
+                                        dataKey="name"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                    />
+                                    <YAxis />
+                                    <Tooltip
+                                        cursor={{ fill: 'hsl(var(--muted))' }}
+                                        content={<ChartTooltipContent indicator="dot" />}
+                                    />
+                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={4} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                 </div>
 
                 <Card className="border-dashed">
                     <CardHeader>
@@ -109,5 +204,3 @@ export default function SuperAdminPage() {
         </SuperAdminAuthGuard>
     );
 }
-
-    

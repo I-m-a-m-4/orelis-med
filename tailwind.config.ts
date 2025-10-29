@@ -18,7 +18,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
+        body: ['Geist', 'sans-serif'],
         headline: ['Geist', 'sans-serif'],
         'space-grotesk': ['Space Grotesk', 'sans-serif'],
       },

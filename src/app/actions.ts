@@ -1,4 +1,3 @@
-
 // src/app/actions.ts
 'use server';
 
@@ -9,6 +8,19 @@ import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
 import type { UserRole } from '@/lib/types';
+import { answerQuestion, type SupportChatInput } from '@/ai/flows/support-chat';
+
+
+// --- AI Support Chat ---
+export async function askSupportQuestion(input: SupportChatInput) {
+    try {
+        const result = await answerQuestion(input);
+        return { success: true, answer: result.answer };
+    } catch (error: any) {
+        console.error("AI chat error:", error);
+        return { success: false, answer: `Sorry, I encountered an error: ${error.message}` };
+    }
+}
 
 
 // --- Appointment Reminder ---
@@ -77,6 +89,7 @@ const addStaffFormSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['admin', 'doctor', 'receptionist']),
+  clinicId: z.string().min(1, 'Clinic ID is required'),
 });
 
 export type AddStaffFormState = {
@@ -105,7 +118,7 @@ export async function addStaffAction(
         };
     }
 
-    const { email, password, name, role } = validatedFields.data;
+    const { email, password, name, role, clinicId } = validatedFields.data;
 
     try {
         // Create user in Firebase Auth
@@ -116,7 +129,7 @@ export async function addStaffAction(
         });
 
         // Set role as a custom claim
-        await auth.setCustomUserClaims(userRecord.uid, { role });
+        await auth.setCustomUserClaims(userRecord.uid, { role, clinicId });
 
         // Create user profile in Firestore
         await firestore.collection('users').doc(userRecord.uid).set({
@@ -125,7 +138,7 @@ export async function addStaffAction(
             name,
             role,
             status: 'active',
-            clinicId: 'default', // Assuming a single clinic for now
+            clinicId: clinicId, 
         });
         
         revalidatePath('/dashboard/staff');
@@ -210,12 +223,6 @@ export async function grantInfiniteAccessAction(
 ): Promise<GrantInfiniteAccessState> {
     await initializeAdminApp();
     const firestore = getFirestore();
-    const auth = getAuth();
-
-    // This action should be protected, check for super admin
-    // This is a server-side check. We're assuming the client has a check too.
-    // In a real app, you'd get the user's ID token and verify it.
-    // For this prototype, we'll skip the complex auth verification.
 
     const validatedFields = grantInfiniteAccessSchema.safeParse(
         Object.fromEntries(formData.entries())
@@ -233,11 +240,68 @@ export async function grantInfiniteAccessAction(
             'subscription.plan': 'infinite',
             'subscription.status': 'active',
         });
-        revalidatePath('/dashboard/super-admin');
+        revalidatePath('/super-admin');
         return { message: 'Infinite access granted successfully!', isSuccess: true };
     } catch (error) {
         console.error('Error granting infinite access:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { message: `Failed to grant access: ${errorMessage}`, isSuccess: false };
+    }
+}
+
+
+// --- Super Admin: Set Super Admin Claim ---
+export async function setSuperAdminClaim(userId: string, email: string): Promise<{ success: boolean; message: string }> {
+    if (email !== 'bimex4@gmail.com') {
+        return { success: false, message: 'Not authorized to become a super admin.' };
+    }
+
+    try {
+        await initializeAdminApp();
+        const auth = getAuth();
+        await auth.setCustomUserClaims(userId, { superAdmin: true, role: 'admin' }); // Also set role to admin
+        return { success: true, message: 'Super admin claim set successfully.' };
+    } catch (error) {
+        console.error('Error setting super admin claim:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to set claim: ${errorMessage}` };
+    }
+}
+
+
+// --- Admin: Change Staff Role ---
+const changeRoleSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
+    newRole: z.enum(['admin', 'doctor', 'receptionist']),
+    clinicId: z.string().min(1, 'Clinic ID is required'),
+});
+
+export async function changeStaffRoleAction(formData: FormData): Promise<{ success: boolean, message: string }> {
+    const validatedFields = changeRoleSchema.safeParse(Object.fromEntries(formData));
+
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid input.' };
+    }
+    
+    const { userId, newRole, clinicId } = validatedFields.data;
+
+    try {
+        await initializeAdminApp();
+        const auth = getAuth();
+        const firestore = getFirestore();
+
+        // Update custom claims
+        await auth.setCustomUserClaims(userId, { role: newRole, clinicId });
+        
+        // Update Firestore document
+        await firestore.collection('users').doc(userId).update({ role: newRole });
+
+        revalidatePath('/dashboard/staff');
+        return { success: true, message: "Staff role updated successfully." };
+
+    } catch (error) {
+        console.error("Error changing staff role:", error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to update role: ${errorMessage}` };
     }
 }

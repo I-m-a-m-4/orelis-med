@@ -1,4 +1,3 @@
-
 // src/app/dashboard/provider.tsx
 'use client';
 import type { ReactNode } from 'react';
@@ -16,15 +15,22 @@ import { LoadingAnimation } from '@/components/layout/loading-animation';
 function AuthGuard({ children }: { children: ReactNode }) {
   const { user, loading } = useUser();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/login');
+        // Allow access to super admin login page
+        if (pathname !== '/super-admin/login') {
+            router.push('/login');
+        }
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, pathname]);
 
   if (loading || !user) {
-    return <LoadingAnimation />;
+    // Show loading animation for all pages except the login pages
+    if (pathname !== '/login' && pathname !== '/super-admin/login') {
+      return <LoadingAnimation />;
+    }
   }
 
   return <>{children}</>;
@@ -35,7 +41,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const firestore = useFirestore();
   const router = useRouter();
   const pathname = usePathname();
-  const isSuperAdmin = user?.email === 'bimex4@gmail.com';
   
   const userProfileRef = useMemo(() => {
     if (!user || !firestore) return null;
@@ -46,25 +51,38 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const isLoading = userLoading || profileLoading;
 
   useEffect(() => {
-    if (!isLoading && userProfile) {
+    if (isLoading || !user || !userProfile) return;
+
+    user.getIdTokenResult().then(idTokenResult => {
+      const isSuperAdmin = !!idTokenResult.claims.superAdmin;
+
       if (isSuperAdmin) {
-        // Super admin can go anywhere, but default to super admin page
-        if (pathname === '/dashboard') {
-          router.replace('/dashboard/super-admin');
+        if (!pathname.startsWith('/super-admin')) {
+          router.replace('/super-admin');
         }
         return;
       }
       
-       if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
+      // If not super admin, redirect away from super admin pages
+      if (pathname.startsWith('/super-admin')) {
+        router.replace('/dashboard');
+        return;
+      }
+      
+      if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
         router.replace('/dashboard/my-records');
-       } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
+      } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
         router.replace('/dashboard/staff');
       }
-    }
-  }, [isLoading, userProfile, router, pathname, isSuperAdmin]);
+    });
+  }, [isLoading, user, userProfile, router, pathname]);
   
   if (isLoading || !userProfile) {
      return <LoadingAnimation />;
+  }
+  
+  if (pathname.startsWith('/super-admin')) {
+      return <AuthGuard>{children}</AuthGuard>;
   }
 
   return (
@@ -86,5 +104,3 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       </AuthGuard>
   );
 }
-
-    
