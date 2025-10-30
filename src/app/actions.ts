@@ -3,7 +3,7 @@
 
 import { generateAppointmentReminder, type AppointmentReminderInput } from '@/ai/flows/appointment-reminders';
 import { z } from 'zod';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
@@ -102,9 +102,9 @@ export async function addStaffAction(
   prevState: AddStaffFormState,
   formData: FormData
 ): Promise<AddStaffFormState> {
-    await initializeAdminApp();
-    const auth = getAuth();
-    const firestore = getFirestore();
+    const adminApp = await initializeAdminApp();
+    const auth = getAuth(adminApp);
+    const firestore = getFirestore(adminApp);
 
     const validatedFields = addStaffFormSchema.safeParse(
         Object.fromEntries(formData.entries())
@@ -173,9 +173,9 @@ export async function updateProfileAction(
   prevState: UpdateProfileFormState,
   formData: FormData
 ): Promise<UpdateProfileFormState> {
-  await initializeAdminApp();
-  const firestore = getFirestore();
-  const auth = getAuth();
+  const adminApp = await initializeAdminApp();
+  const firestore = getFirestore(adminApp);
+  const auth = getAuth(adminApp);
 
   const validatedFields = updateProfileFormSchema.safeParse(
     Object.fromEntries(formData.entries())
@@ -213,8 +213,8 @@ const grantInfiniteAccessSchema = z.object({
 });
 
 export async function grantInfiniteAccessAction(formData: FormData): Promise<{ success: boolean; message: string }> {
-    await initializeAdminApp();
-    const firestore = getFirestore();
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
 
     const validatedFields = grantInfiniteAccessSchema.safeParse(
         Object.fromEntries(formData.entries())
@@ -250,8 +250,8 @@ const setExpiryDateSchema = z.object({
 });
 
 export async function setExpiryDateAction(formData: FormData): Promise<{ success: boolean; message: string }> {
-    await initializeAdminApp();
-    const firestore = getFirestore();
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
 
     const validatedFields = setExpiryDateSchema.safeParse(
         Object.fromEntries(formData.entries())
@@ -284,8 +284,8 @@ const revokeAccessSchema = z.object({
 });
 
 export async function revokeAccessAction(formData: FormData): Promise<{ success: boolean; message: string }> {
-    await initializeAdminApp();
-    const firestore = getFirestore();
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
 
     const validatedFields = revokeAccessSchema.safeParse(
         Object.fromEntries(formData.entries())
@@ -320,8 +320,8 @@ export async function setSuperAdminClaim(userId: string, email: string): Promise
     }
 
     try {
-        await initializeAdminApp();
-        const auth = getAuth();
+        const adminApp = await initializeAdminApp();
+        const auth = getAuth(adminApp);
         await auth.setCustomUserClaims(userId, { superAdmin: true, role: 'admin' }); // Also set role to admin
         return { success: true, message: 'Super admin claim set successfully.' };
     } catch (error) {
@@ -349,9 +349,9 @@ export async function changeStaffRoleAction(formData: FormData): Promise<{ succe
     const { userId, newRole, clinicId } = validatedFields.data;
 
     try {
-        await initializeAdminApp();
-        const auth = getAuth();
-        const firestore = getFirestore();
+        const adminApp = await initializeAdminApp();
+        const auth = getAuth(adminApp);
+        const firestore = getFirestore(adminApp);
 
         // Update custom claims
         await auth.setCustomUserClaims(userId, { role: newRole, clinicId });
@@ -375,9 +375,9 @@ const deleteClinicSchema = z.object({
 });
 
 export async function deleteClinicAction(formData: FormData): Promise<{ success: boolean, message: string }> {
-    await initializeAdminApp();
-    const firestore = getFirestore();
-    const auth = getAuth();
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
+    const auth = getAuth(adminApp);
 
     const validatedFields = deleteClinicSchema.safeParse(Object.fromEntries(formData));
     if (!validatedFields.success) {

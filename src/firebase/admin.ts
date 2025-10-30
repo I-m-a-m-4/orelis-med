@@ -1,24 +1,30 @@
+import { initializeApp, getApps, App, getApp, ServiceAccount, credential } from 'firebase-admin/app';
 
-import { initializeApp, getApps, App, getApp } from 'firebase-admin/app';
-import { credential } from 'firebase-admin';
-
-const ADMIN_APP_NAME = 'firebase-admin-app-aic';
-
+// Use a global variable to cache the admin app instance to avoid re-initialization.
+// This is a common pattern in serverless environments.
 let adminApp: App;
 
-export async function initializeAdminApp() {
-  if (getApps().some(app => app.name === ADMIN_APP_NAME)) {
-    return getApp(ADMIN_APP_NAME);
+export async function initializeAdminApp(): Promise<App> {
+  // Check if the app is already initialized
+  if (getApps().length > 0) {
+    // getApp() returns the default app if no name is provided
+    return getApp();
   }
 
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!serviceAccount) {
+  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!serviceAccountString) {
     throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is not set.');
   }
 
-  adminApp = initializeApp({
-    credential: credential.cert(JSON.parse(serviceAccount)),
-  }, ADMIN_APP_NAME);
+  try {
+    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountString);
 
-  return adminApp;
+    // Initialize the default app
+    return initializeApp({
+      credential: credential.cert(serviceAccount),
+    });
+  } catch (e: any) {
+    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT or initialize app', e);
+    throw new Error('Firebase Admin initialization failed. Ensure FIREBASE_SERVICE_ACCOUNT is a valid JSON string.');
+  }
 }
