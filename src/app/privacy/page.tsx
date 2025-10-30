@@ -1,4 +1,3 @@
-
 'use client';
 import { Menu } from 'lucide-react';
 import Link from 'next/link';
@@ -7,6 +6,7 @@ import { useState } from 'react';
 import { Footer } from '@/components/layout/footer';
 import { OrelisLogo } from '@/components/layout/orelis-logo';
 import { Button } from '@/components/ui/button';
+import { AnimatedLegalBackground } from '@/components/layout/animated-legal-background';
 
 const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
   <div className="w-6 h-6 flex flex-col justify-around">
@@ -22,33 +22,6 @@ const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
     />
   </div>
 );
-
-const AnimatedLegalBackground = () => (
-    <>
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-                <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-                    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="hsla(var(--primary) / 0.08)" strokeWidth="0.5"/>
-                </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-            
-            <line x1="0" y1="20%" x2="100%" y2="20%" className="grid-line" style={{animationDelay: '0.5s'}} />
-            <line x1="0" y1="80%" x2="100%" y2="80%" className="grid-line" style={{animationDelay: '1s'}} />
-            <line x1="20%" y1="0" x2="20%" y2="100%" className="grid-line" style={{animationDelay: '1.5s'}} />
-            <line x1="80%" y1="0" x2="80%" y2="100%" className="grid-line" style={{animationDelay: '2s'}} />
-            
-            <line x1="50%" y1="0" x2="50%" y2="100%" className="grid-line" style={{animationDelay: '2.5s', opacity: 0.05}} />
-            <line x1="0" y1="50%" x2="100%" y2="50%" className="grid-line" style={{animationDelay: '3s', opacity: 0.05}} />
-            
-            <circle cx="20%" cy="20%" r="2" className="detail-dot" style={{animationDelay: '3s'}} />
-            <circle cx="80%" cy="20%" r="2" className="detail-dot" style={{animationDelay: '3.2s'}} />
-            <circle cx="20%" cy="80%" r="2" className="detail-dot" style={{animationDelay: '3.4s'}} />
-            <circle cx="80%" cy="80%" r="2" className="detail-dot" style={{animationDelay: '3.6s'}} />
-            <circle cx="50%" cy="50%" r="1.5" className="detail-dot" style={{animationDelay: '4s'}} />
-        </svg>
-    </>
-)
 
 export default function PrivacyPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -129,40 +102,40 @@ export default function PrivacyPage() {
             <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 prose prose-invert prose-lg prose-headings:font-headline prose-headings:font-semibold prose-headings:text-primary prose-headings:tracking-tight prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-p:text-zinc-400 prose-p:leading-relaxed prose-h2:mb-4 prose-h2:mt-12 prose-h2:text-3xl">
                 <h2>Introduction</h2>
                 <p>
-                Welcome to Orelis ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how your personal information is collected, used, and disclosed by Orelis. This policy applies to all users of our clinic management software and related services.
+                Welcome to Orelis ("we," "our," or "us"). We are committed to protecting your privacy. This Privacy Policy explains how your <u>personal information is collected, used, and disclosed</u> by Orelis. This policy applies to all users of our clinic management software and related services.
                 </p>
 
-                <h2>Information We Collect</h2>
+                <h2 className="mt-12">Information We Collect</h2>
                 <p>
-                We may collect personal information from you, such as your name, email address, phone number, and medical information, when you register for an account, use our services, or communicate with us. We also collect information about your usage of our services, including but not limited to, appointment details and patient records. For operational purposes, we may also collect technical data such as IP addresses and device information.
+                We may collect personal information from you, such as your <u>name, email address, phone number, and medical information</u>, when you register for an account, use our services, or communicate with us. We also collect information about your usage of our services, including but not limited to, appointment details and patient records. For operational purposes, we may also collect technical data such as <u>IP addresses and device information</u>.
                 </p>
                 
-                <h2>How We Use Your Information</h2>
+                <h2 className="mt-12">How We Use Your Information</h2>
                 <p>
-                We use the information we collect to provide, operate, and maintain our services. This includes managing your account, providing customer support, processing transactions, and sending you service-related communications. We may also use your information to improve our services, for research and analytics (in an anonymized and aggregated form), and to comply with legal obligations.
+                We use the information we collect to <u>provide, operate, and maintain our services</u>. This includes managing your account, providing customer support, processing transactions, and sending you service-related communications. We may also use your information to improve our services, for research and analytics (in an anonymized and aggregated form), and to comply with legal obligations.
                 </p>
 
-                <h2>Information Sharing and Disclosure</h2>
+                <h2 className="mt-12">Information Sharing and Disclosure</h2>
                 <p>
-                We do not sell, trade, or otherwise transfer to outside parties your personally identifiable information unless we provide users with advance notice. This does not include website hosting partners and other parties who assist us in operating our website, conducting our business, or serving our users, so long as those parties agree to keep this information confidential and comply with applicable data protection laws.
+                We <u>do not sell, trade, or otherwise transfer</u> to outside parties your personally identifiable information unless we provide users with advance notice. This does not include website hosting partners and other parties who assist us in operating our website, conducting our business, or serving our users, so long as those parties agree to keep this information confidential and comply with applicable data protection laws.
                 </p>
 
-                <h2>Data Security</h2>
+                <h2 className="mt-12">Data Security</h2>
                 <p>
-                We implement a variety of industry-standard security measures to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems, and are required to keep the information confidential. All sensitive information you supply is encrypted via Secure Socket Layer (SSL) technology.
+                We implement a variety of <u>industry-standard security measures</u> to maintain the safety of your personal information. Your personal information is contained behind secured networks and is only accessible by a limited number of persons who have special access rights to such systems, and are required to keep the information confidential. All sensitive information you supply is encrypted via <u>Secure Socket Layer (SSL) technology</u>.
                 </p>
 
-                <h2>Your Rights</h2>
+                <h2 className="mt-12">Your Rights</h2>
                 <p>
-                Depending on your location, you may have certain rights regarding your personal information, such as the right to access, correct, or delete your data. You can also object to or restrict certain processing of your data. Please contact us to exercise these rights, and we will respond in accordance with applicable laws.
+                Depending on your location, you may have certain rights regarding your personal information, such as the <u>right to access, correct, or delete your data</u>. You can also object to or restrict certain processing of your data. Please contact us to exercise these rights, and we will respond in accordance with applicable laws.
                 </p>
 
-                <h2>Changes to This Policy</h2>
+                <h2 className="mt-12">Changes to This Policy</h2>
                 <p>
                 We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date. You are advised to review this Privacy Policy periodically for any changes.
                 </p>
 
-                <h2>Contact Us</h2>
+                <h2 className="mt-12">Contact Us</h2>
                 <p>
                 If you have any questions about this Privacy Policy, please contact us at <a href="mailto:privacy@orelis.com">privacy@orelis.com</a>.
                 </p>

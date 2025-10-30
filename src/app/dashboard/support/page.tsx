@@ -1,4 +1,3 @@
-
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -7,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { LifeBuoy, Bot, Send, ArrowRight, User } from "lucide-react";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { answerQuestion, type SupportChatInput } from "@/ai/flows/support-chat";
+import { askSupportQuestion, type SupportChatInput } from "@/app/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const faqItems = [
   {
@@ -65,9 +66,9 @@ export default function SupportPage() {
         try {
             const chatInput: SupportChatInput = {
                 question: input,
-                history: messages.map(m => ({ role: m.role, content: m.content })),
+                history: messages,
             };
-            const result = await answerQuestion(chatInput);
+            const result = await askSupportQuestion(chatInput);
             const aiMessage: Message = { role: 'ai', content: result.answer };
             setMessages(prev => [...prev, aiMessage]);
         } catch (error) {
@@ -77,8 +78,7 @@ export default function SupportPage() {
                 description: "Sorry, I couldn't process that request. Please try again.",
                 variant: "destructive",
             });
-            // remove the user message if AI fails
-            setMessages(prev => prev.slice(0, -1));
+            // Do not remove the user's message on error
         } finally {
             setIsLoading(false);
         }
@@ -116,7 +116,11 @@ export default function SupportPage() {
                                         </div>
                                     )}
                                     <div className={`p-3 rounded-lg max-w-[80%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                        <p className="text-sm">{message.content}</p>
+                                        <div className="prose prose-sm prose-invert max-w-none">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {message.content}
+                                            </ReactMarkdown>
+                                        </div>
                                     </div>
                                      {message.role === 'user' && (
                                         <div className="p-2 rounded-full bg-muted/80 text-foreground flex-shrink-0">

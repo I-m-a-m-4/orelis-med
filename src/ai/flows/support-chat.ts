@@ -37,6 +37,8 @@ const supportChatPrompt = ai.definePrompt({
     }) },
     output: { schema: SupportChatOutputSchema },
     prompt: `You are an expert support agent for a clinic management application called Orelis. Your goal is to answer user questions based on the provided documentation and context about the app.
+    
+    You MUST format your responses using Markdown. Use lists, bold text, and code blocks to make your answers clear and easy to read.
 
     Here is the backend specification for the Orelis application, which describes all the data entities and their properties. Use this as your primary source of truth.
 
@@ -56,9 +58,10 @@ const supportChatPrompt = ai.definePrompt({
     
     ## How to Answer:
     - Base your answers strictly on the provided JSON specification and context. Do not invent features or functionality.
-    - If a user asks how to do something, provide a step-by-step guide based on the application's features (e.g., "To add a new patient, an Admin or Receptionist should go to the 'Patients' page and click the 'Add Patient' button.").
+    - If a user asks how to do something, provide a step-by-step guide using Markdown lists.
     - Keep your answers concise and easy to understand for a non-technical audience.
     - Be friendly and professional.
+    - Again, YOU MUST USE MARKDOWN to format your response.
 
     Here is the current conversation history. Use it to understand the context of the user's question.
     {{#if history}}

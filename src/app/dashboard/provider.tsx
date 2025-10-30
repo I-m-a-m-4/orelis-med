@@ -18,19 +18,16 @@ function AuthGuard({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
   useEffect(() => {
+    // If not loading and no user, redirect to login unless on a public-facing page
     if (!loading && !user) {
-        // Allow access to super admin login page
-        if (pathname !== '/super-admin/login') {
-            router.push('/login');
-        }
+      if (pathname !== '/login' && pathname !== '/signup/clinic' && pathname !== '/signup/patient') {
+         router.push('/login');
+      }
     }
   }, [user, loading, router, pathname]);
 
   if (loading || !user) {
-    // Show loading animation for all pages except the login pages
-    if (pathname !== '/login' && pathname !== '/super-admin/login') {
-      return <LoadingAnimation />;
-    }
+    return <LoadingAnimation />;
   }
 
   return <>{children}</>;
@@ -51,38 +48,22 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
   const isLoading = userLoading || profileLoading;
 
   useEffect(() => {
-    if (isLoading || !user || !userProfile) return;
+    if (isLoading || !userProfile) return;
+    
+    // Redirect a patient to link their records if they haven't yet
+    if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
+      router.replace('/dashboard/my-records');
+    }
+    
+    // Redirect non-patient staff to add a clinic if they don't have one
+    if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
+      router.replace('/dashboard/staff');
+    }
 
-    user.getIdTokenResult().then(idTokenResult => {
-      const isSuperAdmin = !!idTokenResult.claims.superAdmin;
-
-      if (isSuperAdmin) {
-        if (!pathname.startsWith('/super-admin')) {
-          router.replace('/super-admin');
-        }
-        return;
-      }
-      
-      // If not super admin, redirect away from super admin pages
-      if (pathname.startsWith('/super-admin')) {
-        router.replace('/dashboard');
-        return;
-      }
-      
-      if (userProfile.role === 'patient' && !userProfile.patientId && pathname !== '/dashboard/my-records') {
-        router.replace('/dashboard/my-records');
-      } else if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
-        router.replace('/dashboard/staff');
-      }
-    });
-  }, [isLoading, user, userProfile, router, pathname]);
+  }, [isLoading, userProfile, router, pathname]);
   
   if (isLoading || !userProfile) {
      return <LoadingAnimation />;
-  }
-  
-  if (pathname.startsWith('/super-admin')) {
-      return <AuthGuard>{children}</AuthGuard>;
   }
 
   return (
