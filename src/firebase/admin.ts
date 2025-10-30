@@ -1,14 +1,14 @@
-import { initializeApp, getApps, App, credential, ServiceAccount } from 'firebase-admin/app';
+
+import admin from 'firebase-admin';
+import type { App, ServiceAccount } from 'firebase-admin/app';
 
 // This is a more robust way to handle service account credentials, especially in serverless environments like Vercel.
 // Instead of parsing a complex JSON string, we build the credential from individual environment variables.
 
-let adminApp: App;
-
 export async function initializeAdminApp(): Promise<App> {
   // Check if the app is already initialized to avoid errors.
-  if (getApps().length > 0) {
-    return getApps()[0];
+  if (admin.apps.length > 0) {
+    return admin.apps[0]!;
   }
 
   // Construct the service account object from individual environment variables.
@@ -25,9 +25,7 @@ export async function initializeAdminApp(): Promise<App> {
   }
 
   // Initialize the app with the constructed credential.
-  adminApp = initializeApp({
-    credential: credential.cert(serviceAccount),
+  return admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
   });
-
-  return adminApp;
 }

@@ -238,6 +238,22 @@
         "status"
       ]
     },
+    "Notification": {
+      "title": "Notification",
+      "description": "Represents a notification sent to a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "clinicId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["subscription", "announcement", "info", "welcome", "warning"] },
+        "read": { "type": "boolean" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "link": { "type": "string" }
+      },
+      "required": ["userId", "title", "message", "type", "read", "timestamp"]
+    },
     "Appointment": {
       "title": "Appointment",
       "description": "Represents a scheduled appointment for a patient.",
@@ -264,6 +280,25 @@
         "date",
         "status"
       ]
+    },
+    "BlogPost": {
+      "title": "Blog Post",
+      "description": "Represents a blog article.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "slug": { "type": "string" },
+        "content": { "type": "string", "description": "Markdown content for the blog post." },
+        "featuredImage": { "type": "string", "format": "uri" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "clinicId": { "type": "string", "description": "Optional ID of the clinic featured in the post." },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["draft", "published"] },
+        "metaDescription": { "type": "string" }
+      },
+      "required": ["title", "slug", "content", "authorId", "authorName", "status", "updatedAt"]
     },
     "Prescription": {
       "title": "Prescription",
@@ -377,6 +412,12 @@
       },
       "description": "Stores user accounts for both staff and patients."
     },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
+      "description": "Sub-collection for a user's notifications."
+    },
     "/patients/{patientId}": {
       "schema": {
         "$ref": "#/entities/Patient"
@@ -388,6 +429,12 @@
         "$ref": "#/entities/Appointment"
       },
       "description": "Stores all appointments."
+    },
+    "/blogPosts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/BlogPost"
+      },
+      "description": "Stores blog posts."
     },
     "/patients/{patientId}/prescriptions/{prescriptionId}": {
       "schema": {
@@ -409,5 +456,3 @@
     }
   }
 }
-
-    

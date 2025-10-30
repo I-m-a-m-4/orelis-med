@@ -1,13 +1,14 @@
+
 // src/app/actions.ts
 'use server';
 
 import { generateAppointmentReminder, type AppointmentReminderInput } from '@/ai/flows/appointment-reminders';
 import { z } from 'zod';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
-import type { UserRole } from '@/lib/types';
+import type { UserRole, Clinic, UserProfile } from '@/lib/types';
 import { answerQuestion, type SupportChatInput } from '@/ai/flows/support-chat';
 
 
@@ -140,6 +141,24 @@ export async function addStaffAction(
             status: 'active',
             clinicId: clinicId, 
         });
+
+        // Add welcome notification for new clinic admins
+        if (role === 'admin') {
+            const clinicDoc = await firestore.collection('clinics').doc(clinicId).get();
+            const clinicData = clinicDoc.data() as Clinic;
+            const expiryDate = clinicData.subscription?.expiryDate ? new Date(clinicData.subscription.expiryDate).toLocaleDateString() : 'N/A';
+
+            await firestore.collection('users').doc(userRecord.uid).collection('notifications').add({
+                userId: userRecord.uid,
+                clinicId,
+                title: "Welcome to Orelis!",
+                message: `Your clinic's trial subscription is active and will expire on ${expiryDate}.`,
+                type: 'welcome',
+                read: false,
+                timestamp: new Date().toISOString(),
+                link: '/dashboard/settings' // Or a billing page
+            });
+        }
         
         revalidatePath('/dashboard/staff');
         return { message: `Staff member ${name} created successfully!`, isSuccess: true };
@@ -423,4 +442,148 @@ export async function deleteClinicAction(formData: FormData): Promise<{ success:
         console.error(`Error deleting clinic ${clinicId}:`, error);
         return { success: false, message: `Failed to delete clinic: ${error.message}` };
     }
+}
+
+// --- Super Admin: Broadcast Notification ---
+const broadcastSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    message: z.string().min(1, "Message is required"),
+    link: z.string().optional(),
+    type: z.enum(['announcement', 'info', 'warning']).default('info'),
+});
+export async function sendBroadcastNotificationAction(formData: FormData) {
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
+    
+    const validatedFields = broadcastSchema.safeParse(Object.fromEntries(formData));
+
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid data', errors: validatedFields.error.flatten().fieldErrors };
+    }
+    
+    const { title, message, link, type } = validatedFields.data;
+
+    try {
+        const usersSnapshot = await firestore.collection('users').where('role', '==', 'admin').get();
+        if (usersSnapshot.empty) {
+            return { success: false, message: "No admin users found to send notifications to." };
+        }
+
+        const batch = firestore.batch();
+        usersSnapshot.forEach(userDoc => {
+            const user = userDoc.data() as UserProfile;
+            const notificationRef = userDoc.ref.collection('notifications').doc();
+            batch.set(notificationRef, {
+                userId: user.uid,
+                clinicId: user.clinicId,
+                title,
+                message,
+                link: link || '',
+                type,
+                read: false,
+                timestamp: new Date().toISOString(),
+            });
+        });
+
+        await batch.commit();
+        
+        revalidatePath('/super-admin/notifications');
+        return { success: true, message: `Broadcast sent to ${usersSnapshot.size} admins.` };
+
+    } catch (error: any) {
+        console.error("Error sending broadcast:", error);
+        return { success: false, message: `Failed to send broadcast: ${error.message}` };
+    }
+}
+
+// --- Blog: Image Upload ---
+export async function uploadImageAction(formData: FormData): Promise<{ success: boolean; message: string; url?: string }> {
+    const imageFile = formData.get('image') as File;
+    const apiKey = process.env.IMGBB_API_KEY;
+
+    if (!imageFile) {
+        return { success: false, message: 'No image file provided.' };
+    }
+    if (!apiKey) {
+        return { success: false, message: 'ImgBB API key is not configured.' };
+    }
+
+    const uploadFormData = new FormData();
+    uploadFormData.append('image', imageFile);
+
+    try {
+        const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+            method: 'POST',
+            body: uploadFormData,
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            return { success: true, message: 'Image uploaded successfully!', url: result.data.url };
+        } else {
+            return { success: false, message: result.error?.message || 'Failed to upload image.' };
+        }
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Upload failed: ${errorMessage}` };
+    }
+}
+
+
+// --- Blog: Save Post ---
+const blogPostSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  content: z.string().min(1, "Content is required"),
+  status: z.enum(['draft', 'published']),
+  metaDescription: z.string().optional(),
+  clinicId: z.string().optional(),
+  authorId: z.string(),
+  authorName: z.string(),
+  featuredImage: z.string().optional(),
+  postId: z.string().optional(), // for updates
+});
+
+export async function saveBlogPostAction(formData: FormData) {
+  const adminApp = await initializeAdminApp();
+  const firestore = getFirestore(adminApp);
+
+  const rawData = Object.fromEntries(formData.entries());
+  
+  let clinicId = rawData.clinicId as string;
+  if (clinicId === 'no-clinic') {
+    clinicId = '';
+  }
+
+  const validatedFields = blogPostSchema.safeParse({ ...rawData, clinicId });
+
+  if (!validatedFields.success) {
+    return { success: false, message: 'Invalid data', errors: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const { postId, ...postData } = validatedFields.data;
+  
+  const slug = postData.title.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
+
+  const dataToSave = {
+    ...postData,
+    slug,
+    publishedAt: postData.status === 'published' ? new Date().toISOString() : null,
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    if (postId) {
+      await firestore.collection('blogPosts').doc(postId).set(dataToSave, { merge: true });
+    } else {
+      await firestore.collection('blogPosts').add(dataToSave);
+    }
+    revalidatePath('/super-admin/blog');
+    revalidatePath('/blog');
+    revalidatePath(`/blog/${slug}`);
+    return { success: true, message: `Blog post ${postId ? 'updated' : 'created'} successfully!` };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return { success: false, message: `Failed to save post: ${errorMessage}` };
+  }
 }

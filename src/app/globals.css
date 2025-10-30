@@ -305,7 +305,7 @@ main {
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url('/noisy-bg.lkjpg');
+    background-image: url('/noisy-bg.jpg');
 ;
     opacity: 0.8;
     pointer-events: none;

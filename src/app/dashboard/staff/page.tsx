@@ -1,3 +1,4 @@
+
 'use client';
 import { PlusCircle, ListFilter, MoreHorizontal, UserCog, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -66,15 +67,21 @@ export default function StaffPage() {
 
     const staffQuery = useMemo(() => {
         if (!firestore || !userProfile?.clinicId) return null;
-        return query(collection(firestore, 'users'), where('role', '!=', 'patient'), where('clinicId', '==', userProfile.clinicId));
+        // Corrected Query: Only fetch users from the same clinic
+        return query(
+            collection(firestore, 'users'), 
+            where('clinicId', '==', userProfile.clinicId)
+        );
     }, [firestore, userProfile?.clinicId]);
+    
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
     const [roleFilter, setRoleFilter] = useState<string[]>(['admin', 'doctor', 'receptionist']);
 
     const filteredStaff = useMemo(() => {
         if (!staff) return [];
-        return staff.filter(member => roleFilter.includes(member.role));
+        // Filter out patients locally
+        return staff.filter(member => member.role !== 'patient' && roleFilter.includes(member.role));
     }, [staff, roleFilter]);
 
     const isLoading = userLoading || profileLoading || staffLoading;

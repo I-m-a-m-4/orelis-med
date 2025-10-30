@@ -87,3 +87,30 @@ export interface Clinic {
     expiryDate?: string | null; // ISO string
   };
 }
+
+export interface BlogPost {
+  id?: string;
+  title: string;
+  slug: string;
+  content: string;
+  featuredImage?: string;
+  authorId: string;
+  authorName: string;
+  clinicId?: string;
+  publishedAt: string | null;
+  updatedAt: string;
+  status: 'draft' | 'published';
+  metaDescription?: string;
+}
+
+export interface Notification {
+    id: string;
+    userId: string;
+    clinicId?: string;
+    title: string;
+    message: string;
+    type: 'subscription' | 'announcement' | 'info' | 'welcome' | 'warning';
+    read: boolean;
+    timestamp: string; // ISO string
+    link?: string;
+}

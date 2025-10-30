@@ -102,25 +102,28 @@ const PatientDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     return (
          <div className="flex flex-col gap-4 md:gap-8">
             <h2 className="font-semibold text-lg md:text-xl">Welcome, {user?.displayName}!</h2>
-             <Card className='border-dashed'>
-                <CardHeader>
-                    <CardTitle>Your Health Portal</CardTitle>
-                    <CardDescription>Access your medical records and manage your health information.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button asChild>
-                        <Link href="/dashboard/my-records">
-                            <FileText className="mr-2"/>
-                            Go to My Records
-                        </Link>
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <div className="grid gap-4 md:grid-cols-2">
-                <StatCard title="Upcoming Appointments" value={appointmentsLoading ? '...' : (upcomingAppointments?.length || 0).toString()} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
-                <StatCard title="Medical Records" value={"View"} icon={<FileText className="h-4 w-4 text-muted-foreground" />} description="Access your records" />
-            </div>
+             
+             {!userProfile.patientId ? (
+                <Card className='border-dashed'>
+                    <CardHeader>
+                        <CardTitle>Link Your Patient Record</CardTitle>
+                        <CardDescription>To see your appointments and medical records, you need to link your account to your clinic file.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild>
+                            <Link href="/dashboard/my-records">
+                                <FileText className="mr-2"/>
+                                Link My Record
+                            </Link>
+                        </Button>
+                    </CardContent>
+                </Card>
+             ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                    <StatCard title="Upcoming Appointments" value={appointmentsLoading ? '...' : (upcomingAppointments?.length || 0).toString()} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
+                    <StatCard title="Medical Records" value={"View"} icon={<FileText className="h-4 w-4 text-muted-foreground" />} description="Access your records" />
+                </div>
+             )}
         </div>
     )
 }

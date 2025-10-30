@@ -1,8 +1,9 @@
+
 "use client";
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Hospital, Settings, UserPlus, LifeBuoy, Shield, FileText } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Hospital, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -31,7 +32,11 @@ const patientNavItems: NavItem[] = [
     { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['patient'] },
 ];
 
-const superAdminNav: NavItem = { href: '/super-admin', label: 'Super Admin', icon: Shield, roles: [] };
+const superAdminNavItems: NavItem[] = [
+    { href: '/super-admin', label: 'Overview', icon: Shield, roles: [] },
+    { href: '/super-admin/blog', label: 'Blog', icon: Newspaper, roles: [] },
+    { href: '/super-admin/notifications', label: 'Notifications', icon: Bell, roles: [] },
+];
 
 interface AppSidebarProps {
     userProfile: UserProfile | null;
@@ -48,7 +53,7 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
   const getNavItems = () => {
       if (!userProfile) return [];
       if (isSuperAdminRoute) {
-          return [superAdminNav];
+          return superAdminNavItems;
       }
       if (userProfile.role === 'patient') {
           return patientNavItems;
@@ -79,7 +84,7 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' || pathname === '/dashboard')}
+                  isActive={pathname.startsWith(item.href) && (item.href !== '/dashboard' && item.href !== '/super-admin' || pathname === item.href)}
                   tooltip={item.label}
                 >
                   <Link href={item.href}>
@@ -96,6 +101,18 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
         <SidebarMenu>
             {!isSuperAdminRoute && (
               <>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                        asChild
+                        isActive={pathname.startsWith('/dashboard/notifications')}
+                        tooltip="Notifications"
+                    >
+                        <Link href="/dashboard/notifications">
+                            <Bell />
+                            <span>Notifications</span>
+                        </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     asChild

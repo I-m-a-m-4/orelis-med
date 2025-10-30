@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -9,11 +10,11 @@ import { FirebaseClientProvider } from '@/firebase';
 const siteConfig = {
   name: 'Orelis',
   description: 'The ultimate platform for patient management, intelligent scheduling, and AI-powered insights. Streamline your clinic\'s workflow, reduce no-shows, and enhance patient care with Orelis.',
-  url: 'https://orelis-med.vercel.app', // Replace with your actual domain
-  ogImage: '/icon.png', // Replace with your actual OG image URL
+  url: 'https://orelis.app', // Replace with your actual domain
+  ogImage: 'https://orelis.app/og.png', // Replace with your actual OG image URL
   links: {
     twitter: 'https://twitter.com/orelisapp', // Replace with your Twitter handle
-    github: 'https://github.com/orelis-med',// Replace with your GitHub repo
+    github: 'https://github.com/orelisapp', // Replace with your GitHub repo
   },
 }
 
@@ -63,7 +64,7 @@ export const metadata: Metadata = {
     images: [siteConfig.ogImage],
     creator: '@orelisapp', // Replace with your Twitter handle
   },
-  icons: {
+    icons: {
     icon: '/icon.png',
   },
 };
@@ -81,15 +82,17 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body h-full bg-background text-foreground antialiased">
-        <NextTopLoader color="hsl(var(--primary))" showSpinner={false} />
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="dark"
-            enableSystem
-          >
-            {children}
-          <Toaster />
-        </ThemeProvider>
+        <FirebaseClientProvider>
+          <NextTopLoader color="hsl(var(--primary))" showSpinner={false} />
+          <ThemeProvider
+              attribute="class"
+              defaultTheme="dark"
+              enableSystem
+            >
+              {children}
+            <Toaster />
+          </ThemeProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );
