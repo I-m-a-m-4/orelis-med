@@ -1,30 +1,33 @@
-import { initializeApp, getApps, App, getApp, ServiceAccount, credential } from 'firebase-admin/app';
+import { initializeApp, getApps, App, credential, ServiceAccount } from 'firebase-admin/app';
 
-// Use a global variable to cache the admin app instance to avoid re-initialization.
-// This is a common pattern in serverless environments.
+// This is a more robust way to handle service account credentials, especially in serverless environments like Vercel.
+// Instead of parsing a complex JSON string, we build the credential from individual environment variables.
+
 let adminApp: App;
 
 export async function initializeAdminApp(): Promise<App> {
-  // Check if the app is already initialized
+  // Check if the app is already initialized to avoid errors.
   if (getApps().length > 0) {
-    // getApp() returns the default app if no name is provided
-    return getApp();
+    return getApps()[0];
   }
 
-  const serviceAccountString = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!serviceAccountString) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT environment variable is not set.');
+  // Construct the service account object from individual environment variables.
+  const serviceAccount: ServiceAccount = {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    // The private key needs to have its escaped newlines replaced with actual newlines.
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  };
+
+  // Validate that all required environment variables are present.
+  if (!serviceAccount.projectId || !serviceAccount.clientEmail || !serviceAccount.privateKey) {
+    throw new Error('Firebase Admin initialization failed. Ensure FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY are set.');
   }
 
-  try {
-    const serviceAccount: ServiceAccount = JSON.parse(serviceAccountString);
+  // Initialize the app with the constructed credential.
+  adminApp = initializeApp({
+    credential: credential.cert(serviceAccount),
+  });
 
-    // Initialize the default app
-    return initializeApp({
-      credential: credential.cert(serviceAccount),
-    });
-  } catch (e: any) {
-    console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT or initialize app', e);
-    throw new Error('Firebase Admin initialization failed. Ensure FIREBASE_SERVICE_ACCOUNT is a valid JSON string.');
-  }
+  return adminApp;
 }
