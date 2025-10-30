@@ -2,7 +2,7 @@
 // src/firebase/client-provider.tsx
 'use client';
 import { initializeFirebase } from './index';
-import { FirebaseProvider } from './provider';
+import { FirebaseProvider, useUser, useFirebase, useFirebaseApp, useAuth, useFirestore } from './provider';
 import type { ReactNode } from 'react';
 import { useState, useEffect } from 'react';
 import type { FirebaseApp } from 'firebase/app';
@@ -43,3 +43,6 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     </FirebaseProvider>
   );
 }
+
+// Re-export hooks for convenience
+export { useUser, useFirebase, useFirebaseApp, useAuth, useFirestore };

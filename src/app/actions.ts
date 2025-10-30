@@ -3,7 +3,7 @@
 
 import { generateAppointmentReminder, type AppointmentReminderInput } from '@/ai/flows/appointment-reminders';
 import { z } from 'zod';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
@@ -212,15 +212,7 @@ const grantInfiniteAccessSchema = z.object({
     clinicId: z.string().min(1, 'Clinic ID is required'),
 });
 
-export type GrantInfiniteAccessState = {
-  message: string;
-  isSuccess: boolean;
-};
-
-export async function grantInfiniteAccessAction(
-    prevState: GrantInfiniteAccessState,
-    formData: FormData
-): Promise<GrantInfiniteAccessState> {
+export async function grantInfiniteAccessAction(formData: FormData): Promise<{ success: boolean; message: string }> {
     await initializeAdminApp();
     const firestore = getFirestore();
 
@@ -229,7 +221,7 @@ export async function grantInfiniteAccessAction(
     );
     
     if (!validatedFields.success) {
-        return { message: 'Invalid clinic ID.', isSuccess: false };
+        return { success: false, message: 'Invalid clinic ID.' };
     }
 
     const { clinicId } = validatedFields.data;
@@ -239,13 +231,84 @@ export async function grantInfiniteAccessAction(
         await clinicRef.update({
             'subscription.plan': 'infinite',
             'subscription.status': 'active',
+            'subscription.expiryDate': null,
         });
         revalidatePath('/super-admin');
-        return { message: 'Infinite access granted successfully!', isSuccess: true };
+        return { success: true, message: 'Infinite access granted successfully!' };
     } catch (error) {
         console.error('Error granting infinite access:', error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-        return { message: `Failed to grant access: ${errorMessage}`, isSuccess: false };
+        return { success: false, message: `Failed to grant access: ${errorMessage}` };
+    }
+}
+
+
+// --- Super Admin: Set Expiry Date ---
+const setExpiryDateSchema = z.object({
+    clinicId: z.string().min(1, 'Clinic ID is required'),
+    expiryDate: z.string().min(1, 'Expiry date is required'),
+});
+
+export async function setExpiryDateAction(formData: FormData): Promise<{ success: boolean; message: string }> {
+    await initializeAdminApp();
+    const firestore = getFirestore();
+
+    const validatedFields = setExpiryDateSchema.safeParse(
+        Object.fromEntries(formData.entries())
+    );
+    
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid input.' };
+    }
+
+    const { clinicId, expiryDate } = validatedFields.data;
+
+    try {
+        const clinicRef = firestore.collection('clinics').doc(clinicId);
+        await clinicRef.update({
+            'subscription.expiryDate': new Date(expiryDate).toISOString(),
+            'subscription.status': 'active', // Ensure status is active
+        });
+        revalidatePath('/super-admin');
+        return { success: true, message: 'Subscription expiry updated!' };
+    } catch (error) {
+        console.error('Error setting expiry date:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to set expiry: ${errorMessage}` };
+    }
+}
+
+// --- Super Admin: Revoke Access ---
+const revokeAccessSchema = z.object({
+    clinicId: z.string().min(1, 'Clinic ID is required'),
+});
+
+export async function revokeAccessAction(formData: FormData): Promise<{ success: boolean; message: string }> {
+    await initializeAdminApp();
+    const firestore = getFirestore();
+
+    const validatedFields = revokeAccessSchema.safeParse(
+        Object.fromEntries(formData.entries())
+    );
+    
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid clinic ID.' };
+    }
+
+    const { clinicId } = validatedFields.data;
+
+    try {
+        const clinicRef = firestore.collection('clinics').doc(clinicId);
+        await clinicRef.update({
+            'subscription.plan': 'trial',
+            'subscription.status': 'expired',
+        });
+        revalidatePath('/super-admin');
+        return { success: true, message: 'Clinic access has been revoked.' };
+    } catch (error) {
+        console.error('Error revoking access:', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to revoke access: ${errorMessage}` };
     }
 }
 
@@ -303,5 +366,61 @@ export async function changeStaffRoleAction(formData: FormData): Promise<{ succe
         console.error("Error changing staff role:", error);
         const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
         return { success: false, message: `Failed to update role: ${errorMessage}` };
+    }
+}
+
+// --- Super Admin: Delete Clinic ---
+const deleteClinicSchema = z.object({
+    clinicId: z.string().min(1, 'Clinic ID is required'),
+});
+
+export async function deleteClinicAction(formData: FormData): Promise<{ success: boolean, message: string }> {
+    await initializeAdminApp();
+    const firestore = getFirestore();
+    const auth = getAuth();
+
+    const validatedFields = deleteClinicSchema.safeParse(Object.fromEntries(formData));
+    if (!validatedFields.success) {
+        return { success: false, message: 'Invalid Clinic ID provided.' };
+    }
+    const { clinicId } = validatedFields.data;
+
+    const batch = firestore.batch();
+
+    try {
+        // 1. Delete all patients associated with the clinic
+        const patientsQuery = firestore.collection('patients').where('clinicId', '==', clinicId);
+        const patientsSnapshot = await patientsQuery.get();
+        patientsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+        
+        // 2. Delete all appointments for the clinic
+        const appointmentsQuery = firestore.collection('appointments').where('clinicId', '==', clinicId);
+        const appointmentsSnapshot = await appointmentsQuery.get();
+        appointmentsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        // 3. Delete all staff users for the clinic (from Auth and Firestore)
+        const staffQuery = firestore.collection('users').where('clinicId', '==', clinicId);
+        const staffSnapshot = await staffQuery.get();
+        
+        const staffDeletionPromises: Promise<any>[] = [];
+        staffSnapshot.docs.forEach(doc => {
+            batch.delete(doc.ref); // Delete from Firestore
+            staffDeletionPromises.push(auth.deleteUser(doc.id)); // Delete from Auth
+        });
+        await Promise.all(staffDeletionPromises);
+
+        // 4. Delete the clinic document itself
+        const clinicRef = firestore.collection('clinics').doc(clinicId);
+        batch.delete(clinicRef);
+
+        // 5. Commit all batched writes
+        await batch.commit();
+
+        revalidatePath('/super-admin');
+        return { success: true, message: `Successfully deleted clinic ${clinicId} and all associated data.` };
+
+    } catch (error: any) {
+        console.error(`Error deleting clinic ${clinicId}:`, error);
+        return { success: false, message: `Failed to delete clinic: ${error.message}` };
     }
 }

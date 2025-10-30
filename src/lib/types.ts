@@ -44,13 +44,7 @@ export interface Patient {
 }
 
 
-export interface Staff {
-    id: string;
-    name: string;
-    role: UserRole;
-    email: string;
-    status: 'Active' | 'Inactive';
-}
+export interface Staff extends UserProfile {}
 
 export interface Appointment {
   id: string;
@@ -90,8 +84,6 @@ export interface Clinic {
     plan: 'price_annual' | 'trial' | 'infinite';
     status: 'active' | 'trialing' | 'expired';
     customerId?: string;
-    expiryDate?: string; // ISO string
+    expiryDate?: string | null; // ISO string
   };
 }
-
-    

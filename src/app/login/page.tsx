@@ -14,8 +14,9 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { doc, getDoc } from "firebase/firestore";
-import { useFirestore, FirebaseClientProvider } from "@/firebase";
+import { useFirestore } from "@/firebase/provider";
 import type { UserProfile } from "@/lib/types";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 
 function ForgotPasswordDialog() {
@@ -97,13 +98,24 @@ function LoginForm() {
 
     if (userDoc.exists()) {
       const userProfile = userDoc.data() as UserProfile;
+      // Check for super admin claim
+      // This is a simplified check, a more robust way is to check the ID token claims
+      if (userProfile.email === 'bimex4@gmail.com') {
+          const idTokenResult = await userDoc.ref.parent.parent?.app.auth().currentUser?.getIdTokenResult(true);
+          if (idTokenResult?.claims.superAdmin) {
+              router.push('/super-admin');
+              return;
+          }
+      }
+      
       if (userProfile.role === 'patient' && !userProfile.patientId) {
         router.push('/dashboard/my-records');
       } else {
         router.push('/dashboard');
       }
     } else {
-      router.push('/dashboard/my-records');
+      // Fallback for users that might not have a profile doc yet
+      router.push('/dashboard');
     }
   };
 
@@ -202,7 +214,8 @@ function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 300);
+    // A small delay to prevent flickering on fast connections
+    const timer = setTimeout(() => setIsLoading(false), 300); 
     return () => clearTimeout(timer);
   }, []);
 

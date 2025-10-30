@@ -43,10 +43,13 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
   const { state } = useSidebar();
   const { user } = useUser();
   
-  const isSuperAdmin = user?.email === 'bimex4@gmail.com';
+  const isSuperAdminRoute = pathname.startsWith('/super-admin');
 
   const getNavItems = () => {
       if (!userProfile) return [];
+      if (isSuperAdminRoute) {
+          return [superAdminNav];
+      }
       if (userProfile.role === 'patient') {
           return patientNavItems;
       }
@@ -91,44 +94,34 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith('/dashboard/support')}
-                tooltip="Support"
-              >
-                <Link href="/dashboard/support">
-                  <LifeBuoy />
-                  <span>Support</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith('/dashboard/settings')}
-                tooltip="Settings"
-              >
-                <Link href="/dashboard/settings">
-                  <Settings />
-                  <span>Settings</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-            {isSuperAdmin && (
-             <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(superAdminNav.href)}
-                  tooltip={superAdminNav.label}
-                >
-                  <Link href={superAdminNav.href}>
-                    <superAdminNav.icon />
-                    <span>{superAdminNav.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-          )}
+            {!isSuperAdminRoute && (
+              <>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/dashboard/support')}
+                    tooltip="Support"
+                  >
+                    <Link href="/dashboard/support">
+                      <LifeBuoy />
+                      <span>Support</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/dashboard/settings')}
+                    tooltip="Settings"
+                  >
+                    <Link href="/dashboard/settings">
+                      <Settings />
+                      <span>Settings</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </>
+            )}
           </SidebarMenu>
       </SidebarFooter>
     </>

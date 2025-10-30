@@ -13,7 +13,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useFirestore, FirebaseClientProvider } from "@/firebase";
 import { updateProfile } from "firebase/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { countries } from "@/lib/countries";
@@ -45,7 +45,7 @@ function SignUpForm() {
     const firstName = (e.currentTarget.elements.namedItem('first-name') as HTMLInputElement).value;
     const lastName = (e.currentTarget.elements.namedItem('last-name') as HTMLInputElement).value;
     const country = (e.currentTarget.elements.namedItem('country') as HTMLInputElement).value;
-    const fullName = `${firstName} ${lastName}`;
+    const fullName = `${'${firstName}'} ${'${lastName}'}`;
 
     const { user, error } = await createUserWithEmail(email, password);
     
@@ -185,8 +185,7 @@ function SignUpSkeleton() {
   )
 }
 
-
-export default function PatientSignUpPage() {
+function PatientSignUpPageContent() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -209,4 +208,11 @@ export default function PatientSignUpPage() {
   );
 }
 
-    
+
+export default function PatientSignUpPage() {
+    return (
+        <FirebaseClientProvider>
+            <PatientSignUpPageContent />
+        </FirebaseClientProvider>
+    )
+}

@@ -2,8 +2,8 @@
 'use client';
 import type { ReactNode } from 'react';
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { FirebaseClientProvider, useUser } from '@/firebase';
+import { useRouter, usePathname } from 'next/navigation';
+import { FirebaseClientProvider, useUser } from '@/firebase/client-provider';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -18,20 +18,22 @@ function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
 
     React.useEffect(() => {
         if (loading) {
-            return;
+            return; // Wait for Firebase auth to initialize
         }
         if (!user) {
             router.push('/super-admin/login');
             return;
         }
 
-        user.getIdTokenResult(true).then(idTokenResult => { // Force refresh
+        user.getIdTokenResult(true).then(idTokenResult => { // Force refresh the token
             if (idTokenResult.claims.superAdmin) {
                 setIsAuthorized(true);
             } else {
+                // If not a super admin, redirect to the regular dashboard
                 router.push('/dashboard');
             }
         }).catch(() => {
+             // If token verification fails, they are not a super admin
              router.push('/dashboard');
         }).finally(() => {
             setAuthCheckCompleted(true);
@@ -50,13 +52,19 @@ function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
 
 function SuperAdminLayoutContent({ children }: { children: ReactNode }) {
   const { user, loading: userLoading } = useUser();
+  const pathname = usePathname();
+
+  // If we are on the login page, don't render the guarded layout
+  if (pathname === '/super-admin/login') {
+    return <>{children}</>;
+  }
+  
   const userProfile: UserProfile = {
       uid: user?.uid ?? '',
       name: user?.displayName ?? 'Super Admin',
       email: user?.email ?? '',
       role: 'admin' as const, // Treat super admin as an admin for UI purposes
       status: 'active' as const,
-      // The superAdmin flag can be added to the type if needed elsewhere
   };
 
   return (

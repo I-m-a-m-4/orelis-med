@@ -13,7 +13,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { doc, setDoc } from "firebase/firestore";
-import { useFirestore, useFirebaseApp } from "@/firebase";
+import { useFirestore, useFirebaseApp, FirebaseClientProvider } from "@/firebase";
 import { updateProfile } from "firebase/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { countries } from "@/lib/countries";
@@ -202,7 +202,7 @@ function SignUpSkeleton() {
   )
 }
 
-export default function ClinicSignUpPage() {
+function ClinicSignUpPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -225,4 +225,10 @@ export default function ClinicSignUpPage() {
   );
 }
 
-    
+export default function ClinicSignUpPage() {
+    return (
+        <FirebaseClientProvider>
+            <ClinicSignUpPageContent />
+        </FirebaseClientProvider>
+    )
+}

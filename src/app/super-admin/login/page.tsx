@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -11,12 +12,11 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { setSuperAdminClaim } from "@/app/actions";
-import { FirebaseClientProvider, useUser } from "@/firebase";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 function SuperAdminLoginForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user, loading } = useUser();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -26,6 +26,7 @@ function SuperAdminLoginForm() {
     const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
     const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value;
     
+    // Client-side check for immediate feedback
     if (email.toLowerCase() !== 'bimex4@gmail.com') {
       toast({
         title: "Access Denied",
@@ -39,6 +40,7 @@ function SuperAdminLoginForm() {
     const { user, error } = await signInWithEmail(email, password);
 
     if (user) {
+      // The server action will verify the email again before granting the claim.
       const claimResult = await setSuperAdminClaim(user.uid, user.email || '');
       if (claimResult.success) {
         // Force refresh the token to get new claims before redirecting
@@ -72,9 +74,8 @@ function SuperAdminLoginForm() {
                 id="email"
                 name="email"
                 type="email"
-                placeholder="bimex4@gmail.com"
+                placeholder="superadmin@orelis.com"
                 required
-                defaultValue="bimex4@gmail.com"
               />
             </div>
             <div className="grid gap-2">
@@ -121,10 +122,11 @@ function SuperAdminLoginContent() {
   );
 }
 
+
 export default function SuperAdminLoginPage() {
-    return (
-        <FirebaseClientProvider>
-            <SuperAdminLoginContent />
-        </FirebaseClientProvider>
-    )
+  return (
+    <FirebaseClientProvider>
+      <SuperAdminLoginContent />
+    </FirebaseClientProvider>
+  )
 }
