@@ -64,7 +64,7 @@ export default function NewBlogPostPage() {
 
         const formData = new FormData(event.currentTarget);
         formData.append('authorId', user.uid);
-        formData.append('authorName', user.displayName || 'Orelis Admin');
+        formData.append('authorName', 'Orelis'); // Set author name to Orelis
         formData.append('featuredImage', featuredImage);
 
         const result = await saveBlogPostAction(formData);

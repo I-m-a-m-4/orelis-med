@@ -23,6 +23,11 @@
           "format": "email",
           "description": "The contact email address for the clinic."
         },
+        "website": {
+            "type": "string",
+            "format": "uri",
+            "description": "The clinic's official website."
+        },
         "country": {
           "type": "string",
           "description": "The country where the clinic is located."

@@ -149,7 +149,6 @@ export default function DashboardPage() {
 function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
 
-    // All queries now safely use the validated userProfile
     const appointmentsQuery = useMemo(() => {
         if (!firestore) return null;
         if (userProfile.role === 'patient') {
@@ -163,8 +162,9 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     }, [firestore, userProfile]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
+    // For admin/doctor/receptionist, fetch recent patients from their clinic
     const patientsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId) return null;
+        if (!firestore || userProfile.role === 'patient' || !userProfile.clinicId) return null;
         return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
@@ -174,7 +174,9 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
         .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
         .slice(0, 5);
 
-    const recentPatients = patients?.sort((a,b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime()).slice(0, 4);
+    const recentPatients = patients
+        ?.sort((a,b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime())
+        .slice(0, 4);
 
 
     const renderDashboardByRole = () => {
@@ -305,5 +307,3 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
         </div>
     )
 }
-
-    

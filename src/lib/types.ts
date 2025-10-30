@@ -77,6 +77,7 @@ export interface Clinic {
   address: string;
   phone: string;
   email: string;
+  website?: string;
   country?: string;
   staffCount?: number;
   specialties?: string[];

@@ -8,6 +8,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Footer } from '@/components/layout/footer';
 import { PublicHeader } from '@/components/layout/public-header';
+import Link from 'next/link';
 
 async function getPost(slug: string) {
     const adminApp = await initializeAdminApp();
@@ -63,7 +64,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                                 {post.title}
                             </h1>
                              <p className="font-sans my-4 text-lg text-zinc-400">
-                                Published by {post.authorName} on {new Date(post.publishedAt!).toLocaleDateString()}
+                                Published by <Link href="/" className="hover:text-primary hover:underline">{post.authorName}</Link> on {new Date(post.publishedAt!).toLocaleDateString()}
                             </p>
                         </div>
 
