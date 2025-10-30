@@ -1,3 +1,4 @@
+
 'use client';
 import type { ReactNode } from 'react';
 import * as React from 'react';
@@ -7,6 +8,7 @@ import { LoadingAnimation } from '@/components/layout/loading-animation';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarProvider, Sidebar } from '@/components/ui/sidebar';
+import type { UserProfile } from '@/lib/types';
 
 function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
     const { user, loading } = useUser();
@@ -46,19 +48,18 @@ function SuperAdminAuthGuard({ children }: { children: React.ReactNode }) {
 }
 
 
-export default function SuperAdminLayout({ children }: { children: ReactNode }) {
+function SuperAdminLayoutContent({ children }: { children: ReactNode }) {
   const { user, loading: userLoading } = useUser();
-  const userProfile = {
+  const userProfile: UserProfile = {
       uid: user?.uid ?? '',
       name: user?.displayName ?? 'Super Admin',
       email: user?.email ?? '',
       role: 'admin' as const, // Treat super admin as an admin for UI purposes
       status: 'active' as const,
-      superAdmin: true,
-  }
+      // The superAdmin flag can be added to the type if needed elsewhere
+  };
 
   return (
-    <FirebaseClientProvider>
       <SuperAdminAuthGuard>
           <SidebarProvider>
             <div className="min-h-screen w-full bg-background text-foreground flex">
@@ -74,6 +75,13 @@ export default function SuperAdminLayout({ children }: { children: ReactNode }) 
             </div>
           </SidebarProvider>
       </SuperAdminAuthGuard>
-    </FirebaseClientProvider>
   );
+}
+
+export default function SuperAdminLayout({ children }: { children: ReactNode }) {
+    return (
+        <FirebaseClientProvider>
+            <SuperAdminLayoutContent>{children}</SuperAdminLayoutContent>
+        </FirebaseClientProvider>
+    );
 }

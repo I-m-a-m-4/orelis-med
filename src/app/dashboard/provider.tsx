@@ -20,7 +20,9 @@ function AuthGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     // If not loading and no user, redirect to login unless on a public-facing page
     if (!loading && !user) {
-      if (pathname !== '/login' && pathname !== '/signup/clinic' && pathname !== '/signup/patient') {
+      // Allow access to login/signup pages without redirecting
+      const publicRoutes = ['/login', '/signup', '/signup/clinic', '/signup/patient'];
+      if (!publicRoutes.some(route => pathname.startsWith(route))) {
          router.push('/login');
       }
     }
@@ -55,11 +57,6 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
       router.replace('/dashboard/my-records');
     }
     
-    // Redirect non-patient staff to add a clinic if they don't have one
-    if (userProfile.role !== 'patient' && !userProfile.clinicId && pathname !== '/dashboard/staff') {
-      router.replace('/dashboard/staff');
-    }
-
   }, [isLoading, userProfile, router, pathname]);
   
   if (isLoading || !userProfile) {

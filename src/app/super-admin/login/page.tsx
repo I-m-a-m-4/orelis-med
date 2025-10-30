@@ -11,11 +11,12 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { setSuperAdminClaim } from "@/app/actions";
-
+import { FirebaseClientProvider, useUser } from "@/firebase";
 
 function SuperAdminLoginForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user, loading } = useUser();
   const [isSigningIn, setIsSigningIn] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -25,7 +26,7 @@ function SuperAdminLoginForm() {
     const email = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
     const password = (e.currentTarget.elements.namedItem('password') as HTMLInputElement).value;
     
-    if (email !== 'bimex4@gmail.com') {
+    if (email.toLowerCase() !== 'bimex4@gmail.com') {
       toast({
         title: "Access Denied",
         description: "This login is for super administrators only.",
@@ -40,7 +41,7 @@ function SuperAdminLoginForm() {
     if (user) {
       const claimResult = await setSuperAdminClaim(user.uid, user.email || '');
       if (claimResult.success) {
-        // Refresh token to get new claims
+        // Force refresh the token to get new claims before redirecting
         await user.getIdToken(true); 
         router.push('/super-admin');
       } else {
@@ -104,8 +105,7 @@ function SuperAdminLoginForm() {
   )
 }
 
-
-export default function SuperAdminLoginPage() {
+function SuperAdminLoginContent() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-background grid-bg">
       <div className="w-full max-w-md mx-auto p-4">
@@ -119,4 +119,12 @@ export default function SuperAdminLoginPage() {
       </div>
     </div>
   );
+}
+
+export default function SuperAdminLoginPage() {
+    return (
+        <FirebaseClientProvider>
+            <SuperAdminLoginContent />
+        </FirebaseClientProvider>
+    )
 }
