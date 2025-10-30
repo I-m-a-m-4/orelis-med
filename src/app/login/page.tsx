@@ -14,7 +14,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { doc, getDoc } from "firebase/firestore";
-import { useFirestore } from "@/firebase";
+import { useFirestore, FirebaseClientProvider } from "@/firebase";
 import type { UserProfile } from "@/lib/types";
 
 
@@ -198,7 +198,7 @@ function LoginSkeleton() {
   )
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -219,4 +219,13 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+
+export default function LoginPage() {
+    return (
+        <FirebaseClientProvider>
+            <LoginPageContent />
+        </FirebaseClientProvider>
+    )
 }

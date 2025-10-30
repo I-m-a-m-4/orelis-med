@@ -53,7 +53,6 @@ const supportChatPrompt = ai.definePrompt({
         2.  **Doctor**: Manages patient records, views appointments, and provides care.
         3.  **Receptionist**: Manages patient intake, schedules appointments, and handles front-desk operations.
         4.  **Patient**: Can view their own medical records and manage their appointments.
-    - **Super Admin**: There is a special super-admin role with elevated privileges to manage all clinics on the platform. Access is granted via secure custom claims, not just by email.
     
     ## How to Answer:
     - Base your answers strictly on the provided JSON specification and context. Do not invent features or functionality.
