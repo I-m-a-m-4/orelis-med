@@ -215,11 +215,6 @@ export default function SupportPage() {
                 <DialogContent className="max-w-full h-full md:h-[90vh] md:max-w-[80vw] flex flex-col p-0">
                     <DialogHeader className="p-4 border-b border-dashed flex-row items-center justify-between">
                         <DialogTitle className="flex items-center gap-2"><Bot /> AI Support Assistant</DialogTitle>
-                         <DialogClose asChild>
-                            <Button variant="ghost" size="icon">
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </DialogClose>
                     </DialogHeader>
                      <ChatView 
                         messages={messages}

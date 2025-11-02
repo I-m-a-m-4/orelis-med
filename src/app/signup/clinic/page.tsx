@@ -108,7 +108,7 @@ function SignUpForm() {
   }
 
   return (
-      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50 relative">
+      <div className="w-full max-w-md mx-auto bg-card border border-border rounded-xl shadow-lg relative">
         {isSuccess && <Confetti recycle={false} onConfettiComplete={() => setIsSuccess(false)} numberOfPieces={400} />}
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create a Clinic Account</CardTitle>
@@ -215,7 +215,7 @@ function ClinicSignUpPageContent() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background grid-bg">
+    <div className="flex items-center justify-center min-h-screen bg-background grid-bg py-12">
       <div className="w-full max-w-md mx-auto p-4">
         <div className="text-center mb-8">
             <Link href="/" className="flex items-center justify-center gap-2">

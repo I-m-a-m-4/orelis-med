@@ -332,16 +332,15 @@ export async function revokeAccessAction(formData: FormData): Promise<{ success:
 
 
 // --- Super Admin: Set Super Admin Claim ---
-export async function setSuperAdminClaim(userId: string): Promise<{ success: boolean; message: string }> {
+export async function setSuperAdminClaim(userId: string, email: string): Promise<{ success: boolean; message: string }> {
     try {
-        const adminApp = await initializeAdminApp();
-        const auth = getAuth(adminApp);
-        const user = await auth.getUser(userId);
-
-        // This server-side check is the source of truth
-        if (user.email !== 'bimex4@gmail.com') {
+        // Server-side check for the specific email
+        if (email !== 'bimex4@gmail.com') {
             return { success: false, message: 'Not authorized to become a super admin.' };
         }
+
+        const adminApp = await initializeAdminApp();
+        const auth = getAuth(adminApp);
         
         await auth.setCustomUserClaims(userId, { superAdmin: true, role: 'admin' });
         return { success: true, message: 'Super admin claim set successfully.' };
@@ -564,11 +563,14 @@ export async function saveBlogPostAction(formData: FormData) {
 
   try {
     if (postId) {
+      // This is an update
       await firestore.collection('blogPosts').doc(postId).set(dataToSave, { merge: true });
     } else {
+      // This is a new post
       await firestore.collection('blogPosts').add(dataToSave);
     }
     revalidatePath('/super-admin/blog');
+    revalidatePath(`/super-admin/blog/${postId}/edit`);
     revalidatePath('/blog');
     revalidatePath(`/blog/${slug}`);
     return { success: true, message: `Blog post ${postId ? 'updated' : 'created'} successfully!` };

@@ -69,7 +69,9 @@ export function BlogDashboardClientPage({ posts }: { posts: BlogPost[] }) {
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                            <DropdownMenuItem>Edit</DropdownMenuItem>
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/super-admin/blog/${post.id}/edit`}>Edit</Link>
+                                            </DropdownMenuItem>
                                             {post.status === 'published' && <DropdownMenuItem asChild><Link href={`/blog/${post.slug}`} target="_blank">View Live Post</Link></DropdownMenuItem>}
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>

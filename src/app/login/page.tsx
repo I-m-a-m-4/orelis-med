@@ -141,7 +141,7 @@ function LoginForm() {
   }
 
   return (
-      <Card className="w-full max-w-md mx-auto bg-muted/20 border-white/10 shadow-lg">
+      <Card className="w-full max-w-md mx-auto bg-card border-border shadow-lg">
         <CardHeader>
           <CardTitle className="text-2xl font-headline">Login</CardTitle>
           <CardDescription>Enter your email below to login to your account</CardDescription>

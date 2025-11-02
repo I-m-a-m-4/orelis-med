@@ -9,8 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {defineMessage, type MessageData} from 'genkit';
-import {z} from 'genkit';
+import {Message, defineMessage, type MessageData, z} from 'genkit';
 
 const SupportChatInputSchema = z.object({
   question: z.string().describe("The user's question about the Orelis application."),
@@ -94,21 +93,18 @@ const supportChatFlow = ai.defineFlow(
   async (input) => {
     
     // Convert the plain history object to a structured MessageData array for the model
-    const history: MessageData[] = (input.history || []).map(m =>
-        defineMessage({
-          role: m.role,
-          content: [{text: m.content}],
-        })
+    const history: Message[] = (input.history || []).map(m =>
+        new Message(m.role, m.content)
       );
     
-    const {output} = await ai.generate({
+    const result = await ai.generate({
         prompt: input.question,
         history,
         system: orelisSystemKnowledge,
     });
     
     return {
-        answer: output.text,
+        answer: result.text,
     };
   }
 );
