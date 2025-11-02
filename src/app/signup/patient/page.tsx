@@ -17,14 +17,16 @@ import { useFirestore, FirebaseClientProvider } from "@/firebase";
 import { updateProfile } from "firebase/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { countries } from "@/lib/countries";
+import Confetti from 'react-confetti';
 
 
 function SignUpForm() {
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
-  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
   const handleSuccessfulLogin = (userId: string) => {
     // For new patients, always redirect to link their clinic record
@@ -33,10 +35,10 @@ function SignUpForm() {
 
   const handleEmailSignUp = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSigningIn(true);
+    setIsSigningUp(true);
     if (!firestore) {
       toast({ title: "Error", description: "Firebase is not initialized.", variant: "destructive" });
-      setIsSigningIn(false);
+      setIsSigningUp(false);
       return;
     }
 
@@ -45,7 +47,7 @@ function SignUpForm() {
     const firstName = (e.currentTarget.elements.namedItem('first-name') as HTMLInputElement).value;
     const lastName = (e.currentTarget.elements.namedItem('last-name') as HTMLInputElement).value;
     const country = (e.currentTarget.elements.namedItem('country') as HTMLInputElement).value;
-    const fullName = `${'${firstName}'} ${'${lastName}'}`;
+    const fullName = `${firstName} ${lastName}`;
 
     const { user, error } = await createUserWithEmail(email, password);
     
@@ -66,7 +68,8 @@ function SignUpForm() {
             title: "Account Created!",
             description: "Please link your clinic to continue.",
         });
-        handleSuccessfulLogin(user.uid);
+        setIsSuccess(true);
+        setTimeout(() => handleSuccessfulLogin(user.uid), 3000);
       } catch (firestoreError: any) {
         toast({
             title: "Error setting up profile",
@@ -82,11 +85,12 @@ function SignUpForm() {
         });
     }
 
-    setIsSigningIn(false);
+    setIsSigningUp(false);
   }
 
   return (
-      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
+      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50 relative">
+        {isSuccess && <Confetti recycle={false} onConfettiComplete={() => setIsSuccess(false)} numberOfPieces={400} />}
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create a Patient Account</CardTitle>
           <CardDescription>Sign up to access your health records and appointments.</CardDescription>
@@ -136,9 +140,9 @@ function SignUpForm() {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full" disabled={isSigningIn}>
-              {isSigningIn && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSigningIn ? 'Creating Account...' : 'Create Account'}
+            <Button type="submit" className="w-full" disabled={isSigningUp}>
+              {isSigningUp && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isSigningUp ? 'Creating Account...' : 'Create Account'}
             </Button>
             </form>
           </div>

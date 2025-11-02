@@ -8,6 +8,7 @@ import { useFirestore } from '@/firebase';
 import { OrelisLogo } from '@/components/layout/orelis-logo';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import Confetti from 'react-confetti';
 
 
 // --- Waitlist Page Component ---
@@ -16,6 +17,7 @@ export default function WaitlistPage() {
   const formRef = useRef<HTMLFormElement>(null);
   const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handleFormSubmit = async (formData: FormData) => {
     const email = formData.get('email') as string;
@@ -36,6 +38,7 @@ export default function WaitlistPage() {
             description: "Thanks for your interest. We'll be in touch soon.",
             action: <CheckCircle className="text-green-500" />,
         });
+        setIsSuccess(true);
         formRef.current?.reset();
     } catch (error) {
         toast({
@@ -50,6 +53,7 @@ export default function WaitlistPage() {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-black noisy-bg font-body">
+      {isSuccess && <Confetti recycle={false} onConfettiComplete={() => setIsSuccess(false)} />}
       <div className="relative w-full max-w-6xl mx-auto p-4 md:p-8">
         <div className="relative flex flex-col justify-center border border-dashed border-white/20 p-8 sm:p-12 text-center overflow-hidden min-h-[75vh]">
             <div className="pointer-events-none absolute inset-0">
@@ -62,14 +66,14 @@ export default function WaitlistPage() {
                  <div className="flex justify-center mb-8">
                     <OrelisLogo />
                 </div>
-                <h1 className="text-3xl md:text-5xl font-headline font-light tracking-tighter text-white mb-4">
+                <h1 className="mt-6 max-w-4xl mx-auto font-headline text-3xl font-light tracking-tighter text-white sm:text-5xl md:text-6xl">
                     The Future of Healthcare is Coming.
                 </h1>
-                <p className="text-base sm:text-lg text-zinc-400 mb-8 max-w-md mx-auto">
+                <p className="mt-5 max-w-2xl mx-auto text-base text-zinc-400 sm:text-lg">
                     We're putting the final touches on Orelis. Be the first to know when we launch and get exclusive early access.
                 </p>
 
-                <form ref={formRef} action={handleFormSubmit} className="space-y-4 max-w-sm mx-auto">
+                <form ref={formRef} action={handleFormSubmit} className="mt-8 space-y-4 max-w-sm mx-auto">
                     <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input 
@@ -81,7 +85,7 @@ export default function WaitlistPage() {
                             className="pl-9 h-12 text-base animated-input-focus"
                         />
                     </div>
-                    <Button type="submit" className="w-full h-12 text-base" disabled={isSubmitting}>
+                    <Button type="submit" className="w-full h-12 text-base button-glow" disabled={isSubmitting}>
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />

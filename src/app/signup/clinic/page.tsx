@@ -17,6 +17,7 @@ import { useFirestore, useFirebaseApp, FirebaseClientProvider } from "@/firebase
 import { updateProfile } from "firebase/auth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { countries } from "@/lib/countries";
+import Confetti from "react-confetti";
 
 function SignUpForm() {
   const router = useRouter();
@@ -25,6 +26,7 @@ function SignUpForm() {
   const app = useFirebaseApp();
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   
   const handleSuccessfulLogin = (userId: string) => {
     router.push('/dashboard');
@@ -82,7 +84,8 @@ function SignUpForm() {
             title: "Account Created!",
             description: "Your clinic profile has been created.",
         });
-        await handleSuccessfulLogin(user.uid);
+        setIsSuccess(true);
+        setTimeout(() => handleSuccessfulLogin(user.uid), 3000); // Redirect after confetti
 
       } catch (firestoreError: any) {
          toast({
@@ -105,7 +108,8 @@ function SignUpForm() {
   }
 
   return (
-      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50">
+      <div className="w-full max-w-md mx-auto bg-zinc-950 border border-zinc-800 rounded-xl shadow-lg shadow-zinc-950/50 relative">
+        {isSuccess && <Confetti recycle={false} onConfettiComplete={() => setIsSuccess(false)} numberOfPieces={400} />}
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-headline">Create a Clinic Account</CardTitle>
           <CardDescription>Join Orelis to start managing your practice.</CardDescription>

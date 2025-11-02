@@ -9,16 +9,17 @@
  */
 
 import {ai} from '@/ai/genkit';
+import {defineMessage, type MessageData} from 'genkit';
 import {z} from 'genkit';
 
 const SupportChatInputSchema = z.object({
-  question: z.string().describe('The user\'s question about the Orelis application.'),
-  history: z.array(z.any()).optional().describe('The chat history between the user and the AI.'),
+  question: z.string().describe("The user's question about the Orelis application."),
+  history: z.array(z.any()).optional().describe("The chat history between the user and the AI."),
 });
 export type SupportChatInput = z.infer<typeof SupportChatInputSchema>;
 
 const SupportChatOutputSchema = z.object({
-  answer: z.string().describe('The AI\'s answer to the user\'s question.'),
+  answer: z.string().describe("The AI's answer to the user's question."),
 });
 export type SupportChatOutput = z.infer<typeof SupportChatOutputSchema>;
 
@@ -84,27 +85,6 @@ You are an expert support agent for a clinic management application called Oreli
 `;
 
 
-const supportChatPrompt = ai.definePrompt({
-    name: 'supportChatPrompt',
-    system: orelisSystemKnowledge,
-    input: { schema: z.object({
-        question: SupportChatInputSchema.shape.question,
-        history: z.string().optional().describe('A formatted string of the chat history.'),
-    }) },
-    output: { schema: SupportChatOutputSchema },
-    prompt: `{{#if history}}
-      Here is the conversation history. Use it to understand the context of the user's question.
-      Chat History:
-      {{{history}}}
-    {{/if}}
-
-    Now, please answer the following question.
-
-    User Question: {{{question}}}
-    `,
-});
-
-
 const supportChatFlow = ai.defineFlow(
   {
     name: 'supportChatFlow',
@@ -112,13 +92,23 @@ const supportChatFlow = ai.defineFlow(
     outputSchema: SupportChatOutputSchema,
   },
   async (input) => {
-    const historyText = input.history?.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content}`).join('\n');
     
-    const {output} = await supportChatPrompt({
-        question: input.question,
-        history: historyText,
+    // Convert the plain history object to a structured MessageData array for the model
+    const history: MessageData[] = (input.history || []).map(m =>
+        defineMessage({
+          role: m.role,
+          content: [{text: m.content}],
+        })
+      );
+    
+    const {output} = await ai.generate({
+        prompt: input.question,
+        history,
+        system: orelisSystemKnowledge,
     });
     
-    return output!;
+    return {
+        answer: output.text,
+    };
   }
 );
