@@ -2,10 +2,10 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarPlus, ListFilter } from "lucide-react";
+import { CalendarPlus, ListFilter, History } from "lucide-react";
 import { AppointmentReminderButton } from "./appointment-reminder-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useCollection } from "@/firebase/firestore/use-collection";
+import { useCollection, type WithPendingWrites } from "@/firebase/firestore/use-collection";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
 import type { Appointment, UserProfile } from "@/lib/types";
@@ -14,9 +14,10 @@ import Link from "next/link";
 import { useDoc } from "@/firebase";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 
-function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
+function AppointmentList({ appointments, loading }: { appointments: WithPendingWrites<Appointment>[] | null, loading: boolean }) {
     if (loading) {
         return <p className="text-center text-muted-foreground py-12">Loading appointments...</p>;
     }
@@ -26,13 +27,25 @@ function AppointmentList({ appointments, loading }: { appointments: Appointment[
     return (
         <div className="space-y-4">
             {appointments.map(appt => (
-                <Card key={appt.id} className="border-dashed">
+                <Card key={appt.id} className={`border-dashed ${appt.hasPendingWrites ? 'bg-muted/30' : ''}`}>
                     <CardContent className="p-4 flex items-center gap-4">
                         <Avatar className="h-14 w-14">
                             <AvatarFallback className="text-xl">{getInitials(appt.patientName)}</AvatarFallback>
                         </Avatar>
                         <div className="grid gap-1 flex-1">
-                            <p className="font-semibold">{appt.patientName}</p>
+                            <p className="font-semibold flex items-center gap-2">
+                                {appt.patientName}
+                                {appt.hasPendingWrites && (
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                            <History className="h-4 w-4 text-muted-foreground animate-pulse" />
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Changes pending, will sync when online.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                )}
+                            </p>
                             <p className="text-sm text-muted-foreground">with {appt.doctorName}</p>
                             <p className="text-sm text-muted-foreground">{appt.reason}</p>
                         </div>
@@ -146,5 +159,3 @@ export default function AppointmentsPage() {
         </div>
     );
 }
-
-    

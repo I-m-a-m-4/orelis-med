@@ -99,6 +99,15 @@ body {
   .light [data-variant="default"] [data-slot="description"] {
      color: hsl(var(--secondary-foreground));
   }
+  .light [data-variant="destructive"] {
+    background-color: hsl(var(--destructive) / 0.1);
+    border-color: hsl(var(--destructive) / 0.2);
+  }
+  .light [data-variant="destructive"] [data-slot="title"],
+  .light [data-variant="destructive"] [data-slot="description"],
+  .light [data-variant="destructive"] .lucide-alert-circle {
+    color: hsl(var(--destructive));
+  }
 }
 
 /* Custom Scrollbar */
@@ -110,7 +119,6 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--muted));
-  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--accent));
@@ -119,7 +127,6 @@ body {
 .text-stroke {
   -webkit-text-stroke: 1px hsla(var(--foreground), 0.6);
   text-stroke: 1px hsla(var(--foreground), 0.6);
-  color: transparent;
 }
 
 .light .text-stroke {

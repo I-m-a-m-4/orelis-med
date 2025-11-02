@@ -146,7 +146,7 @@ export default function NewBlogPostPage() {
                                         {isUploading ? <Loader2 className="animate-spin" /> : <Upload />}
                                         {isUploading ? 'Uploading...' : 'Upload Image'}
                                     </Button>
-                                    <Input name="featuredImage" value={featuredImage} onChange={e => setFeaturedImage(e.target.value)} placeholder="Or paste image URL" />
+                                    <Input name="featuredImageInput" value={featuredImage} onChange={e => setFeaturedImage(e.target.value)} placeholder="Or paste image URL" />
 
                                 </div>
                             </CardContent>

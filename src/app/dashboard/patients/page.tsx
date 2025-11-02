@@ -1,5 +1,5 @@
 'use client';
-import { PlusCircle, ListFilter, MoreHorizontal, User as UserIcon, Search } from "lucide-react";
+import { PlusCircle, ListFilter, MoreHorizontal, User as UserIcon, Search, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -9,12 +9,14 @@ import Link from "next/link";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, query, where, doc } from "firebase/firestore";
 import { useFirestore, useUser } from "@/firebase/provider";
-import type { Patient, UserProfile } from "@/lib/types";
+import type { Patient } from "@/lib/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useDoc } from "@/firebase";
+import type { UserProfile } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function PatientsPage() {
     const firestore = useFirestore();
@@ -129,13 +131,25 @@ export default function PatientsPage() {
                                     <TableCell colSpan={6} className="text-center">Loading patients...</TableCell>
                                 </TableRow>
                             ) : filteredPatients.length > 0 ? filteredPatients.map(patient => (
-                                <TableRow key={patient.id}>
+                                <TableRow key={patient.id} className={patient.hasPendingWrites ? 'bg-muted/30' : ''}>
                                     <TableCell className="hidden sm:table-cell">
                                       <Avatar>
                                         <AvatarFallback>{getInitials(`${patient.firstName} ${patient.surname}`)}</AvatarFallback>
                                       </Avatar>
                                     </TableCell>
-                                    <TableCell className="font-medium">{patient.firstName} {patient.surname}</TableCell>
+                                    <TableCell className="font-medium flex items-center gap-2">
+                                        {patient.firstName} {patient.surname}
+                                        {patient.hasPendingWrites && (
+                                            <Tooltip>
+                                                <TooltipTrigger>
+                                                    <History className="h-4 w-4 text-muted-foreground animate-pulse" />
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Changes pending, will sync when online.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        )}
+                                    </TableCell>
                                     <TableCell>
                                         <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'} className={patient.status === 'Active' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}>
                                             {patient.status || 'Active'}

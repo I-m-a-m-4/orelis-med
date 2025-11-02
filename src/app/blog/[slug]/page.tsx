@@ -7,18 +7,34 @@ import remarkGfm from 'remark-gfm';
 import { Footer } from '@/components/layout/footer';
 import { PublicHeader } from '@/components/layout/public-header';
 import Link from 'next/link';
-import { blogPosts } from '@/lib/blog-data';
+import { blogPosts as hardcodedBlogPosts } from '@/lib/blog-data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import { Twitter } from 'lucide-react';
+import { initializeAdminApp } from '@/firebase/admin';
+import { getFirestore } from 'firebase-admin/firestore';
 
+// Revalidate this page every hour to fetch updates
+export const revalidate = 3600;
 
 async function getPost(slug: string): Promise<BlogPost | null> {
-    const post = blogPosts.find(p => p.slug === slug);
-    
-    // In a real app, you might also query Firestore for dynamic posts
-    // if the post is not found in the hardcoded list.
-    
+    // First, try to fetch from Firestore
+    try {
+        const adminApp = await initializeAdminApp();
+        const firestore = getFirestore(adminApp);
+        const postsRef = firestore.collection('blogPosts');
+        const snapshot = await postsRef.where('slug', '==', slug).where('status', '==', 'published').limit(1).get();
+
+        if (!snapshot.empty) {
+            const doc = snapshot.docs[0];
+            return { id: doc.id, ...doc.data() } as BlogPost;
+        }
+    } catch (error) {
+        console.error("Error fetching dynamic post:", error);
+    }
+
+    // If not found in Firestore, check the hardcoded list
+    const post = hardcodedBlogPosts.find(p => p.slug === slug && p.status === 'published');
     return post || null;
 }
 
@@ -75,7 +91,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                             </h1>
                              <div className="mt-6 flex items-center justify-center gap-4">
                                 <Avatar>
-                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
+                                    <AvatarImage src={post.authorId === 'orelis-team' ? '/orelis-avatar.png' : `https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
                                     <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
                                 </Avatar>
                                 <div>
@@ -98,12 +114,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                         <div className="mt-16 border-t border-dashed border-border pt-8 flex flex-col sm:flex-row justify-between items-center gap-6">
                             <div className="flex items-center gap-4">
                                 <Avatar>
-                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
+                                    <AvatarImage src={post.authorId === 'orelis-team' ? '/orelis-avatar.png' : `https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
                                     <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
                                 </Avatar>
                                 <div>
                                     <p className="font-semibold text-white">About the Author</p>
-                                    <p className="text-zinc-400 text-sm">The Orelis Team consists of healthcare experts, developers, and designers passionate about improving patient care through technology.</p>
+                                    <p className="text-zinc-400 text-sm">{post.authorName === 'Orelis' ? 'The official Orelis team account.' : 'The Orelis Team consists of healthcare experts, developers, and designers passionate about improving patient care through technology.'}</p>
                                 </div>
                             </div>
                             <Link href="#" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors">
@@ -120,10 +136,23 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
 // This function tells Next.js which slugs to pre-render at build time.
 export async function generateStaticParams() {
-    // In a real app, you would also fetch dynamic slugs from your CMS/database
-    const allPosts = blogPosts;
+    let dynamicPosts: BlogPost[] = [];
+    try {
+        const adminApp = await initializeAdminApp();
+        const firestore = getFirestore(adminApp);
+        const postsRef = firestore.collection('blogPosts');
+        const snapshot = await postsRef.where('status', '==', 'published').get();
+        if (!snapshot.empty) {
+            dynamicPosts = snapshot.docs.map(doc => ({ slug: doc.data().slug } as BlogPost));
+        }
+    } catch (error) {
+        console.error("Error fetching dynamic slugs for static generation:", error);
+    }
     
-    return allPosts.map(post => ({
-        slug: post.slug,
+    const allPosts = [...hardcodedBlogPosts, ...dynamicPosts];
+    const uniqueSlugs = Array.from(new Set(allPosts.map(post => post.slug)));
+    
+    return uniqueSlugs.map(slug => ({
+        slug,
     }));
 }
