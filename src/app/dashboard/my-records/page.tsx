@@ -1,3 +1,4 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,10 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useUser, useFirestore, useDoc } from "@/firebase";
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import type { UserProfile, Clinic, Patient } from '@/lib/types';
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { useState, useEffect, type FormEvent, useMemo } from "react";
 import { FileText, Link as LinkIcon, Barcode, Loader2 } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
@@ -24,7 +24,6 @@ function LinkRecordForm({ user }: { user: User }) {
 
     const [isLinking, setIsLinking] = useState(false);
 
-    // Fetch clinics only when this form is rendered (i.e., when user needs to link)
     const clinicsCollection = useMemo(() => {
         if (!firestore) return null;
         return collection(firestore, 'clinics');
@@ -38,33 +37,36 @@ function LinkRecordForm({ user }: { user: User }) {
 
         const formData = new FormData(e.currentTarget);
         const clinicId = formData.get('clinic') as string;
-        const patientId = formData.get('patient-id') as string;
+        const patientCode = formData.get('patient-code') as string;
 
-        if (!clinicId || !patientId) {
-            toast({ title: "Missing Information", description: "Please select a clinic and enter your Patient ID.", variant: "destructive" });
+        if (!clinicId || !patientCode) {
+            toast({ title: "Missing Information", description: "Please select a clinic and enter your Patient Code.", variant: "destructive" });
             setIsLinking(false);
             return;
         }
 
         try {
-            // In a real app, you would have a more secure way to verify patient ID, likely via a server-side function.
-            // For this prototype, we query for a matching document. This is not ideal for security.
-            const patientDocRef = doc(firestore, 'patients', patientId);
-            const patientDoc = await getDoc(patientDocRef);
+            const patientsRef = collection(firestore, 'patients');
+            const q = query(patientsRef, where("clinicId", "==", clinicId), where("patientCode", "==", patientCode.toUpperCase()));
+            
+            const querySnapshot = await getDocs(q);
 
-            if (!patientDoc.exists() || patientDoc.data().clinicId !== clinicId) {
-                toast({ title: "Record Not Found", description: "The Patient ID could not be found for the selected clinic. Please check your details and try again.", variant: "destructive" });
+            if (querySnapshot.empty) {
+                toast({ title: "Record Not Found", description: "The Patient Code could not be found for the selected clinic. Please check your details and try again.", variant: "destructive" });
                 setIsLinking(false);
                 return;
             }
             
+            const patientDoc = querySnapshot.docs[0];
+            
             const userRef = doc(firestore, 'users', user.uid);
             await updateDoc(userRef, {
-                patientId: patientId
+                patientId: patientDoc.id
             });
 
             toast({ title: "Success!", description: "Your account has been linked to your medical record." });
-            router.refresh(); // This will re-render the parent component which will then show the linked view
+            router.push('/dashboard'); 
+            router.refresh();
 
         } catch (error) {
             console.error("Error linking record:", error);
@@ -84,7 +86,7 @@ function LinkRecordForm({ user }: { user: User }) {
                 </div>
                 <CardTitle className="text-2xl font-headline">Link Your Clinic Record</CardTitle>
                 <CardDescription>
-                    Enter the Patient ID provided by your clinic to securely access your medical records.
+                    Enter the Patient Code provided by your clinic to securely access your medical records.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -104,8 +106,8 @@ function LinkRecordForm({ user }: { user: User }) {
                             </Select>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="patient-id">Enter Your Patient ID</Label>
-                            <Input id="patient-id" name="patient-id" placeholder="e.g., ORL-12345" className="bg-background/70" disabled={isLinking} />
+                            <Label htmlFor="patient-code">Enter Your Patient Code</Label>
+                            <Input id="patient-code" name="patient-code" placeholder="e.g., K8F3T9" className="bg-background/70 uppercase" disabled={isLinking} />
                         </div>
                         <Button className="w-full" type="submit" disabled={isLinking || clinicsLoading}>
                             {isLinking ? <Loader2 className="mr-2 animate-spin" /> : <Barcode className="mr-2" />}
@@ -185,8 +187,10 @@ export default function MyRecordsPage() {
         <div className="flex flex-col items-center justify-center h-full noisy-bg -m-4 md:-m-6 lg:-m-8 p-4 md:p-6 lg:p-8">
             {user && <LinkRecordForm user={user} />}
              <p className="text-xs text-muted-foreground mt-6 text-center max-w-sm">
-                Your Patient ID is a unique code provided by your hospital on your patient card. It allows us to securely fetch your medical records. If you can't find it, please contact your clinic.
+                Your Patient Code is a unique code provided by your hospital on your patient card. It allows us to securely fetch your medical records. If you can't find it, please contact your clinic.
             </p>
         </div>
     );
 }
+
+    

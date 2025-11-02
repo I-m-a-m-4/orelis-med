@@ -88,6 +88,10 @@
           "type": "string",
           "description": "The ID of the clinic this patient belongs to."
         },
+        "patientCode": {
+          "type": "string",
+          "description": "A unique, secure, and unguessable code for patient account linking."
+        },
         "surname": {
           "type": "string",
           "description": "The patient's surname."
@@ -187,6 +191,7 @@
       },
       "required": [
         "clinicId",
+        "patientCode",
         "surname",
         "firstName",
         "dob",
@@ -242,6 +247,26 @@
         "role",
         "status"
       ]
+    },
+    "Mail": {
+      "title": "Mail",
+      "description": "Represents an email to be sent by the Trigger Email extension.",
+      "type": "object",
+      "properties": {
+        "to": {
+          "type": "array",
+          "items": { "type": "string", "format": "email" }
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "subject": { "type": "string" },
+            "html": { "type": "string" }
+          },
+          "required": ["subject", "html"]
+        }
+      },
+      "required": ["to", "message"]
     },
     "Notification": {
       "title": "Notification",
@@ -458,6 +483,14 @@
         "$ref": "#/entities/AuditLog"
       },
       "description": "Collection for system-wide audit logs."
+    },
+    "/mail/{mailId}": {
+        "schema": {
+            "$ref": "#/entities/Mail"
+        },
+        "description": "Collection for the Trigger Email extension. Documents added here will be sent as emails."
     }
   }
 }
+
+    

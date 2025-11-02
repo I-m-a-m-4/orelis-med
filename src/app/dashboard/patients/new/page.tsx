@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, type FormEvent } from 'react';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Loader2, PlusIcon, Trash2 } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
+import { cn, generatePatientCode } from "@/lib/utils";
 import { format } from "date-fns";
 import { useRouter } from 'next/navigation';
 import { useUser, useFirestore, useDoc } from '@/firebase';
@@ -85,6 +86,7 @@ export default function AddPatientPage() {
 
         const patientData = {
             clinicId: userProfile.clinicId,
+            patientCode: generatePatientCode(),
             firstName: formData.get('firstName') as string,
             surname: formData.get('surname') as string,
             dob: dob?.toISOString() ?? '',
@@ -354,3 +356,5 @@ export default function AddPatientPage() {
     </div>
   )
 }
+
+    

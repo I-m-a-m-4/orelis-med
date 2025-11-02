@@ -1,3 +1,4 @@
+
 'use client';
 import { useMemo } from 'react';
 import { doc } from 'firebase/firestore';
@@ -7,13 +8,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, FileText, User as UserIcon, Download, Printer } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, User as UserIcon, Download, Printer, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 function DetailItem({ label, value }: { label: string, value: string | undefined | null }) {
     if (!value) return null;
@@ -29,6 +31,7 @@ export default function PatientDetailPage() {
     const { id: patientId } = useParams();
     const firestore = useFirestore();
     const router = useRouter();
+    const { toast } = useToast();
 
     const patientDocRef = useMemo(() => {
         if (!patientId || !firestore) return null;
@@ -57,7 +60,14 @@ export default function PatientDetailPage() {
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
     };
-
+    
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            toast({ title: 'Copied!', description: 'Patient code copied to clipboard.' });
+        }).catch(() => {
+            toast({ title: 'Error', description: 'Could not copy text.', variant: 'destructive' });
+        });
+    }
 
     if (patientLoading) {
         return (
@@ -115,7 +125,6 @@ export default function PatientDetailPage() {
         )
     }
 
-
     const patientDetails = {
         'Patient ID': patient.id,
         'Date of Birth': patient.dob ? format(new Date(patient.dob), 'PPP') : 'N/A',
@@ -170,6 +179,20 @@ export default function PatientDetailPage() {
                             </div>
                         </CardHeader>
                     </Card>
+                    <Card className="border-dashed">
+                        <CardHeader>
+                            <CardTitle>Patient Linking Code</CardTitle>
+                            <CardDescription>Provide this code to the patient to link their account.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-center space-x-2 bg-muted p-4 rounded-md">
+                                <p className="text-2xl font-bold tracking-widest text-foreground">{patient.patientCode}</p>
+                                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(patient.patientCode)}>
+                                    <Copy className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
                      <Card className="border-dashed">
                         <CardHeader>
                             <CardTitle>Next of Kin</CardTitle>
@@ -212,3 +235,5 @@ export default function PatientDetailPage() {
         </div>
     );
 }
+
+    

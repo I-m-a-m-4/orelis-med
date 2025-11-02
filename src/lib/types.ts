@@ -18,6 +18,7 @@ export interface UserProfile {
 export interface Patient {
   id: string; // This will be the Firestore document ID
   clinicId: string;
+  patientCode: string; // Secure code for linking patient account
   surname: string;
   firstName: string;
   sex: 'Male' | 'Female' | 'Other';
@@ -120,3 +121,5 @@ export interface Notification {
 export interface Broadcast extends Notification {
     target: 'all' | string; // 'all' or a specific clinicId
 }
+
+    

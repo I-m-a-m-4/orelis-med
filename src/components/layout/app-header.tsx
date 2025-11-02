@@ -80,11 +80,16 @@ function NotificationBell() {
           <DropdownMenuSeparator />
           {notifications && notifications.length > 0 ? (
             notifications.map(notif => (
-              <DropdownMenuItem key={notif.id} onSelect={() => handleNotificationClick(notif)} className={`flex items-start gap-2 ${!notif.read ? 'bg-accent' : ''}`}>
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium">{notif.title}</p>
-                  <p className="text-xs text-muted-foreground">{notif.message}</p>
-                   <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}</p>
+              <DropdownMenuItem key={notif.id} onSelect={(e) => e.preventDefault()} className="p-0">
+                 <div 
+                    onClick={() => handleNotificationClick(notif)} 
+                    className={`w-full cursor-pointer flex items-start gap-2 p-2 ${!notif.read ? 'bg-accent' : ''}`}
+                 >
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-medium">{notif.title}</p>
+                      <p className="text-xs text-muted-foreground">{notif.message}</p>
+                      <p className="text-xs text-muted-foreground/70">{formatDistanceToNow(new Date(notif.timestamp), { addSuffix: true })}</p>
+                    </div>
                 </div>
               </DropdownMenuItem>
             ))
@@ -93,7 +98,7 @@ function NotificationBell() {
           )}
            <DropdownMenuSeparator />
            <DropdownMenuItem asChild>
-              <Link href="/dashboard/notifications" className="text-center w-full justify-center">View all notifications</Link>
+              <Link href="/dashboard/notifications" className="cursor-pointer justify-center">View all notifications</Link>
            </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
