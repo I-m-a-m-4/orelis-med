@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -13,21 +14,26 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '../ui/sidebar';
-import { useUser, useCollection, useFirestore } from '@/firebase';
+import { useUser, useCollection, useFirestore, useDoc } from '@/firebase';
 import { signOut } from '@/firebase/auth';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import type { Notification } from '@/lib/types';
+import type { Notification, UserProfile } from '@/lib/types';
 import { collection, query, where, orderBy, limit, doc, updateDoc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Badge } from '../ui/badge';
 import { formatDistanceToNow } from 'date-fns';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { getInitials } from '@/lib/utils';
+
 
 function NotificationBell() {
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
 
   const notificationsQuery = useMemo(() => {
+    // IMPORTANT: Do not create the query until both user and firestore are available.
     if (!user || !firestore) return null;
     return query(
       collection(firestore, 'users', user.uid, 'notifications'),
@@ -43,15 +49,19 @@ function NotificationBell() {
   }, [notifications]);
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!user || !firestore || notification.read) return;
-    const notifRef = doc(firestore, 'users', user.uid, 'notifications', notification.id!);
-    await updateDoc(notifRef, { read: true });
+    if (!user || !firestore || !notification.id) return;
+
+    if (!notification.read) {
+        const notifRef = doc(firestore, 'users', user.uid, 'notifications', notification.id);
+        await updateDoc(notifRef, { read: true });
+    }
+    
     if (notification.link) {
       router.push(notification.link);
+    } else {
+      router.push('/dashboard/notifications');
     }
   };
-  
-  const router = useRouter();
 
 
   return (
@@ -108,31 +118,21 @@ export function AppHeader() {
             <Input
             type="search"
             placeholder="Search..."
-            className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[320px]"
+            className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[320px] animated-input-focus"
             />
         </div>
         <NotificationBell />
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-            <Button
-                variant="outline"
-                size="icon"
-                className="overflow-hidden rounded-full"
-            >
-                {loading ? (
-                    <User className="h-5 w-5" />
-                ) : user?.photoURL ? (
-                    <Image
-                        src={user.photoURL}
-                        width={36}
-                        height={36}
-                        alt="Avatar"
-                        className="overflow-hidden"
-                    />
-                ) : (
-                    <User className="h-5 w-5" />
-                )}
-            </Button>
+              <Button
+                variant="ghost"
+                className="relative h-8 w-8 rounded-full"
+              >
+                <Avatar className="h-9 w-9">
+                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
+                  <AvatarFallback>{user?.displayName ? getInitials(user.displayName) : <User />}</AvatarFallback>
+                </Avatar>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
             <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>

@@ -13,6 +13,8 @@ import type { Patient, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useDoc } from "@/firebase";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
 
 export default function PatientsPage() {
     const firestore = useFirestore();
@@ -129,9 +131,9 @@ export default function PatientsPage() {
                             ) : filteredPatients.length > 0 ? filteredPatients.map(patient => (
                                 <TableRow key={patient.id}>
                                     <TableCell className="hidden sm:table-cell">
-                                        <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
-                                            <UserIcon className="h-8 w-8 text-muted-foreground" />
-                                        </div>
+                                      <Avatar>
+                                        <AvatarFallback>{getInitials(`${patient.firstName} ${patient.surname}`)}</AvatarFallback>
+                                      </Avatar>
                                     </TableCell>
                                     <TableCell className="font-medium">{patient.firstName} {patient.surname}</TableCell>
                                     <TableCell>

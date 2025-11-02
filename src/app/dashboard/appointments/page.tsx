@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarPlus, ListFilter, User } from "lucide-react";
+import { CalendarPlus, ListFilter } from "lucide-react";
 import { AppointmentReminderButton } from "./appointment-reminder-button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useCollection } from "@/firebase/firestore/use-collection";
@@ -12,6 +12,9 @@ import type { Appointment, UserProfile } from "@/lib/types";
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useDoc } from "@/firebase";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
+
 
 function AppointmentList({ appointments, loading }: { appointments: Appointment[] | null, loading: boolean }) {
     if (loading) {
@@ -25,9 +28,9 @@ function AppointmentList({ appointments, loading }: { appointments: Appointment[
             {appointments.map(appt => (
                 <Card key={appt.id} className="border-dashed">
                     <CardContent className="p-4 flex items-center gap-4">
-                        <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center">
-                            <User className="h-8 w-8 text-muted-foreground" />
-                        </div>
+                        <Avatar className="h-14 w-14">
+                            <AvatarFallback className="text-xl">{getInitials(appt.patientName)}</AvatarFallback>
+                        </Avatar>
                         <div className="grid gap-1 flex-1">
                             <p className="font-semibold">{appt.patientName}</p>
                             <p className="text-sm text-muted-foreground">with {appt.doctorName}</p>
@@ -63,13 +66,14 @@ export default function AppointmentsPage() {
     const appointmentsQuery = useMemo(() => {
         if (!firestore || !userProfile) return null;
 
+        const appointmentsCollection = collection(firestore, 'appointments');
         if (userProfile.role === 'patient') {
-            if (!userProfile.patientId) return null; // Patient not linked yet
-            return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
+            if (!userProfile.patientId) return null;
+            return query(appointmentsCollection, where('patientId', '==', userProfile.patientId));
         }
         
         if (userProfile.clinicId) {
-            return query(collection(firestore, 'appointments'), where('clinicId', '==', userProfile.clinicId));
+            return query(appointmentsCollection, where('clinicId', '==', userProfile.clinicId));
         }
 
         return null;
@@ -121,7 +125,7 @@ export default function AppointmentsPage() {
                     )}
                 </div>
             </div>
-            <div className="relative border border-dashed border-white/20 p-4 rounded-lg">
+            <div className="relative border border-dashed p-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList>
                         <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
@@ -142,3 +146,5 @@ export default function AppointmentsPage() {
         </div>
     );
 }
+
+    

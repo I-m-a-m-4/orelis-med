@@ -1,14 +1,13 @@
 
-// src/app/actions.ts
 'use server';
 
 import { generateAppointmentReminder, type AppointmentReminderInput } from '@/ai/flows/appointment-reminders';
 import { z } from 'zod';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { initializeAdminApp } from '@/firebase/admin';
 import { getAuth } from 'firebase-admin/auth';
 import { revalidatePath } from 'next/cache';
-import type { UserRole, Clinic, UserProfile } from '@/lib/types';
+import type { Clinic, UserProfile, Patient } from '@/lib/types';
 import { answerQuestion, type SupportChatInput } from '@/ai/flows/support-chat';
 
 
@@ -333,15 +332,18 @@ export async function revokeAccessAction(formData: FormData): Promise<{ success:
 
 
 // --- Super Admin: Set Super Admin Claim ---
-export async function setSuperAdminClaim(userId: string, email: string): Promise<{ success: boolean; message: string }> {
-    if (email !== 'bimex4@gmail.com') {
-        return { success: false, message: 'Not authorized to become a super admin.' };
-    }
-
+export async function setSuperAdminClaim(userId: string): Promise<{ success: boolean; message: string }> {
     try {
         const adminApp = await initializeAdminApp();
         const auth = getAuth(adminApp);
-        await auth.setCustomUserClaims(userId, { superAdmin: true, role: 'admin' }); // Also set role to admin
+        const user = await auth.getUser(userId);
+
+        // This server-side check is the source of truth
+        if (user.email !== 'bimex4@gmail.com') {
+            return { success: false, message: 'Not authorized to become a super admin.' };
+        }
+        
+        await auth.setCustomUserClaims(userId, { superAdmin: true, role: 'admin' });
         return { success: true, message: 'Super admin claim set successfully.' };
     } catch (error) {
         console.error('Error setting super admin claim:', error);
@@ -464,31 +466,19 @@ export async function sendBroadcastNotificationAction(formData: FormData) {
     const { title, message, link, type } = validatedFields.data;
 
     try {
-        const usersSnapshot = await firestore.collection('users').where('role', '==', 'admin').get();
-        if (usersSnapshot.empty) {
-            return { success: false, message: "No admin users found to send notifications to." };
-        }
+        const broadcastData = {
+            title,
+            message,
+            link: link || '',
+            type,
+            timestamp: new Date().toISOString(),
+            target: 'all', // For now, all broadcasts go to everyone
+        };
 
-        const batch = firestore.batch();
-        usersSnapshot.forEach(userDoc => {
-            const user = userDoc.data() as UserProfile;
-            const notificationRef = userDoc.ref.collection('notifications').doc();
-            batch.set(notificationRef, {
-                userId: user.uid,
-                clinicId: user.clinicId,
-                title,
-                message,
-                link: link || '',
-                type,
-                read: false,
-                timestamp: new Date().toISOString(),
-            });
-        });
-
-        await batch.commit();
+        await firestore.collection('broadcasts').add(broadcastData);
         
         revalidatePath('/super-admin/notifications');
-        return { success: true, message: `Broadcast sent to ${usersSnapshot.size} admins.` };
+        return { success: true, message: `Broadcast sent successfully.` };
 
     } catch (error: any) {
         console.error("Error sending broadcast:", error);
@@ -586,4 +576,107 @@ export async function saveBlogPostAction(formData: FormData) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
     return { success: false, message: `Failed to save post: ${errorMessage}` };
   }
+}
+
+// --- Update Patient Action ---
+const updatePatientSchema = z.object({
+    patientId: z.string(),
+    clinicId: z.string(),
+    firstName: z.string().min(1, 'First name is required'),
+    surname: z.string().min(1, 'Surname is required'),
+    dob: z.string().optional(),
+    sex: z.enum(['Male', 'Female', 'Other']),
+    maritalStatus: z.enum(['Single', 'Married', 'Divorced', 'Widowed']).optional(),
+    address: z.string().optional(),
+    phone: z.string().min(1, 'Phone is required'),
+    email: z.string().email('Invalid email').optional().or(z.literal('')),
+    occupation: z.string().optional(),
+    origin: z.string().optional(),
+    tribe: z.string().optional(),
+    religion: z.string().optional(),
+    notes: z.string().optional(),
+    nextOfKinName: z.string().optional(),
+    nextOfKinRelation: z.string().optional(),
+    nextOfKinPhone: z.string().optional(),
+    nextOfKinAddress: z.string().optional(),
+  });
+  
+export async function updatePatientAction(prevState: any, formData: FormData) {
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
+    
+    const validatedFields = updatePatientSchema.safeParse(
+        Object.fromEntries(formData.entries())
+    );
+
+    if (!validatedFields.success) {
+        return {
+            message: 'Validation failed. Please check the fields.',
+            errors: validatedFields.error.flatten().fieldErrors,
+            isSuccess: false,
+        };
+    }
+    
+    const { patientId, clinicId, ...patientData } = validatedFields.data;
+
+    const dataToUpdate = {
+        firstName: patientData.firstName,
+        surname: patientData.surname,
+        dob: patientData.dob,
+        sex: patientData.sex,
+        maritalStatus: patientData.maritalStatus,
+        address: patientData.address,
+        phone: patientData.phone,
+        email: patientData.email,
+        occupation: patientData.occupation,
+        origin: patientData.origin,
+        tribe: patientData.tribe,
+        religion: patientData.religion,
+        notes: patientData.notes,
+        nextOfKin: {
+            name: patientData.nextOfKinName,
+            relation: patientData.nextOfKinRelation,
+            phone: patientData.nextOfKinPhone,
+            address: patientData.nextOfKinAddress,
+        },
+    };
+
+    try {
+        const patientRef = firestore.collection('patients').doc(patientId);
+        await patientRef.update(dataToUpdate);
+        
+        revalidatePath(`/dashboard/patients/${patientId}`);
+        revalidatePath(`/dashboard/patients`);
+        
+        return {
+            message: 'Patient details updated successfully!',
+            isSuccess: true,
+        };
+    } catch (error) {
+        console.error("Error updating patient:", error);
+        return {
+            message: 'An error occurred while updating the patient.',
+            isSuccess: false,
+        };
+    }
+}
+
+// --- Delete Broadcast Notification ---
+export async function deleteBroadcastAction(formData: FormData): Promise<{ success: boolean; message: string }> {
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
+
+    const broadcastId = formData.get('broadcastId') as string;
+    if (!broadcastId) {
+        return { success: false, message: "Broadcast ID is missing." };
+    }
+
+    try {
+        await firestore.collection('broadcasts').doc(broadcastId).delete();
+        revalidatePath('/super-admin/notifications');
+        return { success: true, message: "Broadcast deleted successfully." };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to delete broadcast: ${errorMessage}` };
+    }
 }

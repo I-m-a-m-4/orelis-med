@@ -1,6 +1,5 @@
 'use client';
 import { Stethoscope } from 'lucide-react';
-import { useRef, useEffect } from 'react';
 
 export function OrelisLogo() {
   return (
@@ -18,19 +17,19 @@ export function OrelisLogo() {
             aria-hidden="true"
             className="hover-text pointer-events-none absolute inset-0 w-0 overflow-hidden border-r-[3px] animate-wipe"
             style={{
-              color: '#10b981',
-              borderColor: '#10b981',
+              color: 'hsl(var(--primary))',
+              borderColor: 'hsl(var(--primary))',
             }}
           >
             <span className="text-stroke-anim-green text-transparent select-none">&nbsp;Orelis&nbsp;</span>
           </span>
         </span>
         <div className="particles absolute inset-0 pointer-events-none overflow-hidden -z-10">
-          <div className="particle particle-1 absolute bg-white rounded-full" style={{ width: '1px', height: '1px', left: '20%', top: '30%' }}></div>
-          <div className="particle particle-2 absolute bg-white rounded-full" style={{ width: '1px', height: '1px', left: '50%', top: '60%' }}></div>
-          <div className="particle particle-3 absolute bg-white rounded-full" style={{ width: '1px', height: '1px', left: '70%', top: '40%' }}></div>
-          <div className="particle particle-4 absolute bg-white rounded-full" style={{ width: '1.5px', height: '1.5px', left: '30%', top: '70%' }}></div>
-          <div className="particle particle-5 absolute bg-white rounded-full" style={{ width: '0.5px', height: '0.5px', left: '80%', top: '20%' }}></div>
+          <div className="particle particle-1 absolute bg-primary rounded-full" style={{ width: '1px', height: '1px', left: '20%', top: '30%' }}></div>
+          <div className="particle particle-2 absolute bg-primary rounded-full" style={{ width: '1px', height: '1px', left: '50%', top: '60%' }}></div>
+          <div className="particle particle-3 absolute bg-primary rounded-full" style={{ width: '1px', height: '1px', left: '70%', top: '40%' }}></div>
+          <div className="particle particle-4 absolute bg-primary rounded-full" style={{ width: '1.5px', height: '1.5px', left: '30%', top: '70%' }}></div>
+          <div className="particle particle-5 absolute bg-primary rounded-full" style={{ width: '0.5px', height: '0.5px', left: '80%', top: '20%' }}></div>
         </div>
       </button>
       <style jsx>{`
@@ -40,27 +39,24 @@ export function OrelisLogo() {
         .particle {
           opacity: 0;
         }
-        .particle-1 {
-          animation: particleMove1 1.5s ease-out forwards;
-          animation-delay: 0.2s;
+        button:hover .particle-1,
+        button:hover .particle-2,
+        button:hover .particle-3,
+        button:hover .particle-4,
+        button:hover .particle-5 {
+           animation-name: particleMove;
+           animation-duration: 1.5s;
+           animation-timing-function: ease-out;
+           animation-fill-mode: forwards;
         }
-        .particle-2 {
-          animation: particleMove2 1.5s ease-out forwards;
-          animation-delay: 0.5s;
-        }
-        .particle-3 {
-          animation: particleMove3 1.5s ease-out forwards;
-          animation-delay: 0.8s;
-        }
-        .particle-4 {
-          animation: particleMove4 1.5s ease-out forwards;
-          animation-delay: 1.0s;
-        }
-        .particle-5 {
-          animation: particleMove5 1.5s ease-out forwards;
-          animation-delay: 1.2s;
-        }
-        @keyframes particleMove1 {
+
+        button:hover .particle-1 { animation-delay: 0.2s; }
+        button:hover .particle-2 { animation-delay: 0.5s; }
+        button:hover .particle-3 { animation-delay: 0.8s; }
+        button:hover .particle-4 { animation-delay: 1.0s; }
+        button:hover .particle-5 { animation-delay: 1.2s; }
+
+        @keyframes particleMove {
           0% {
             transform: translate(0, 0) scale(0);
             opacity: 0;
@@ -73,78 +69,15 @@ export function OrelisLogo() {
             opacity: 1;
           }
           100% {
-            transform: translate(15px, -8px) scale(0.5);
+            transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.5);
             opacity: 0;
           }
         }
-        @keyframes particleMove2 {
-          0% {
-            transform: translate(0, 0) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-20px, 12px) scale(0.5);
-            opacity: 0;
-          }
-        }
-        @keyframes particleMove3 {
-          0% {
-            transform: translate(0, 0) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(10px, 18px) scale(0.5);
-            opacity: 0;
-          }
-        }
-        @keyframes particleMove4 {
-          0% {
-            transform: translate(0, 0) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(-12px, -15px) scale(0.5);
-            opacity: 0;
-          }
-        }
-        @keyframes particleMove5 {
-          0% {
-            transform: translate(0, 0) scale(0);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-            transform: scale(1);
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translate(25px, 5px) scale(0.5);
-            opacity: 0;
-          }
-        }
+        .particle-1 { --dx: 15px; --dy: -8px; }
+        .particle-2 { --dx: -20px; --dy: 12px; }
+        .particle-3 { --dx: 10px; --dy: 18px; }
+        .particle-4 { --dx: -12px; --dy: -15px; }
+        .particle-5 { --dx: 25px; --dy: 5px; }
       `}</style>
     </>
   );

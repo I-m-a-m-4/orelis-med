@@ -17,9 +17,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { User, LayoutDashboard } from 'lucide-react';
-import Image from 'next/image';
 import { signOut } from '@/firebase/auth';
 import { useRouter } from 'next/navigation';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { getInitials } from '@/lib/utils';
+
 
 const AnimatedHamburgerIcon = ({ open }: { open: boolean }) => (
   <div className="w-6 h-6 flex flex-col justify-around">
@@ -77,22 +79,14 @@ export function PublicHeader() {
             ) : user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="overflow-hidden rounded-full"
-                  >
-                    {user.photoURL ? (
-                      <Image
-                        src={user.photoURL}
-                        width={36}
-                        height={36}
-                        alt="Avatar"
-                        className="overflow-hidden"
-                      />
-                    ) : (
-                      <User className="h-5 w-5" />
-                    )}
+                    <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                        <Avatar className="h-9 w-9">
+                            {user.photoURL ? (
+                                <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />
+                            ) : (
+                                <AvatarFallback>{getInitials(user.displayName || '?')}</AvatarFallback>
+                            )}
+                        </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

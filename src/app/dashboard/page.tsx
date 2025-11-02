@@ -1,7 +1,6 @@
-
 'use client';
 import { StatCard } from "@/components/dashboard/stat-card";
-import { Activity, Users, Calendar, Stethoscope, User, ArrowRight, FileText } from "lucide-react";
+import { Activity, Users, Calendar, Stethoscope } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -12,6 +11,9 @@ import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
 import { LoadingAnimation } from "@/components/layout/loading-animation";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { getInitials } from "@/lib/utils";
+import { FileText, ArrowRight } from "lucide-react";
 
 const AdminDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
@@ -30,7 +32,7 @@ const AdminDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
 
     const staffQuery = useMemo(() => {
         if (!firestore || !userProfile.clinicId) return null;
-        return query(collection(firestore, 'users'), where('role', '!=', 'patient'), where("clinicId", "==", userProfile.clinicId));
+        return query(collection(firestore, 'users'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile.clinicId]);
     const { data: staff, loading: staffLoading } = useCollection<UserProfile>(staffQuery);
 
@@ -51,7 +53,7 @@ const DoctorDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
     const firestore = useFirestore();
 
     const appointmentsQuery = useMemo(() => {
-        if (!firestore || !userProfile.clinicId) return null;
+        if (!firestore || !userProfile.clinicId || !userProfile.uid) return null;
         return query(collection(firestore, 'appointments'), where("clinicId", "==", userProfile.clinicId), where("doctorId", "==", userProfile.uid));
     }, [firestore, userProfile.clinicId, userProfile.uid]);
     const { data: allAppointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
@@ -96,6 +98,7 @@ const PatientDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
         if (!firestore || !userProfile.patientId) return null;
         return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
     }, [firestore, userProfile.patientId]);
+
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     const upcomingAppointments = appointments?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled');
 
@@ -139,7 +142,11 @@ export default function DashboardPage() {
     }, [user, firestore]);
     const { data: userProfile, loading: profileLoading } = useDoc<UserProfile>(userProfileRef);
 
-    if (userLoading || profileLoading || !userProfile) {
+    if (userLoading || profileLoading) {
+        return <LoadingAnimation />;
+    }
+    
+    if (!userProfile) {
         return <LoadingAnimation />;
     }
     
@@ -150,7 +157,7 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     const firestore = useFirestore();
 
     const appointmentsQuery = useMemo(() => {
-        if (!firestore) return null;
+        if (!firestore || !userProfile) return null;
         if (userProfile.role === 'patient') {
              if (!userProfile.patientId) return null;
              return query(collection(firestore, 'appointments'), where('patientId', '==', userProfile.patientId));
@@ -162,9 +169,8 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     }, [firestore, userProfile]);
     const { data: appointments, loading: appointmentsLoading } = useCollection<Appointment>(appointmentsQuery);
     
-    // For admin/doctor/receptionist, fetch recent patients from their clinic
     const patientsQuery = useMemo(() => {
-        if (!firestore || userProfile.role === 'patient' || !userProfile.clinicId) return null;
+        if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
         return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
     }, [firestore, userProfile]);
     const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
@@ -203,7 +209,7 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
                 <h1 className="font-semibold text-lg md:text-2xl">Dashboard</h1>
             </div>
             
-            <div className="relative border border-dashed rounded-lg p-4 sm:p-6 md:p-8">
+            <div className="relative border border-dashed p-4 sm:p-6 md:p-8">
                  {renderDashboardByRole()}
             </div>
 
@@ -245,9 +251,9 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
                                 <ul className="divide-y divide-border/50 divide-dashed">
                                     {upcomingAppointments.map((appt) => (
                                     <li key={appt.id} className="flex items-center gap-4 py-3">
-                                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                                            <User className="h-6 w-6 text-muted-foreground" />
-                                        </div>
+                                        <Avatar className="h-10 w-10">
+                                            <AvatarFallback>{getInitials(appt.patientName)}</AvatarFallback>
+                                        </Avatar>
                                         <div className="grid gap-1 text-sm">
                                             <div className="font-medium">{appt.patientName}</div>
                                             <div className="text-muted-foreground">with {appt.doctorName}</div>
@@ -264,44 +270,46 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
                             )}
                         </CardContent>
                     </Card>
-                    <Card className="border-dashed">
-                        <CardHeader>
-                            <CardTitle>Recent Patients</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-8">
-                            {patientsLoading ? (
-                                <div className="space-y-8">
-                                    {[...Array(3)].map((_, i) => (
-                                        <div key={i} className="flex items-center gap-4">
-                                            <Skeleton className="h-12 w-12 rounded-full" />
-                                            <div className="grid gap-1 flex-1">
-                                                <Skeleton className="h-4 w-3/4" />
-                                                <Skeleton className="h-4 w-1/2" />
+                     {userProfile?.role !== 'patient' && (
+                        <Card className="border-dashed">
+                            <CardHeader>
+                                <CardTitle>Recent Patients</CardTitle>
+                            </CardHeader>
+                            <CardContent className="grid gap-8">
+                                {patientsLoading ? (
+                                    <div className="space-y-8">
+                                        {[...Array(3)].map((_, i) => (
+                                            <div key={i} className="flex items-center gap-4">
+                                                <Skeleton className="h-12 w-12 rounded-full" />
+                                                <div className="grid gap-1 flex-1">
+                                                    <Skeleton className="h-4 w-3/4" />
+                                                    <Skeleton className="h-4 w-1/2" />
+                                                </div>
+                                                <Skeleton className="h-6 w-16 rounded-full" />
                                             </div>
-                                            <Skeleton className="h-6 w-16 rounded-full" />
+                                        ))}
+                                    </div>
+                                ) : recentPatients && recentPatients.length > 0 ? recentPatients.map(patient => (
+                                    <div key={patient.id} className="flex items-center gap-4">
+                                        <Avatar className="h-12 w-12">
+                                            <AvatarFallback>{getInitials(`${patient.firstName} ${patient.surname}`)}</AvatarFallback>
+                                        </Avatar>
+                                        <div className="grid gap-1">
+                                            <p className="text-sm font-medium leading-none">{patient.firstName} {patient.surname}</p>
+                                            <p className="text-sm text-muted-foreground">Registered: {new Date(patient.registrationDate).toLocaleDateString()}</p>
                                         </div>
-                                    ))}
-                                </div>
-                            ) : recentPatients && recentPatients.length > 0 ? recentPatients.map(patient => (
-                                <div key={patient.id} className="flex items-center gap-4">
-                                    <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
-                                        <User className="h-6 w-6 text-muted-foreground" />
+                                        <div className="ml-auto font-medium">
+                                            <Badge variant={'outline'} >
+                                                {patient.status || 'Active'}
+                                            </Badge>
+                                        </div>
                                     </div>
-                                    <div className="grid gap-1">
-                                        <p className="text-sm font-medium leading-none">{patient.firstName} {patient.surname}</p>
-                                        <p className="text-sm text-muted-foreground">Registered: {new Date(patient.registrationDate).toLocaleDateString()}</p>
-                                    </div>
-                                    <div className="ml-auto font-medium">
-                                        <Badge variant={'outline'} >
-                                            {patient.status || 'Active'}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            )) : (
-                                <p className="text-center text-muted-foreground py-8">No recent patients.</p>
-                            )}
-                        </CardContent>
-                    </Card>
+                                )) : (
+                                    <p className="text-center text-muted-foreground py-8">No recent patients.</p>
+                                )}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             )}
         </div>

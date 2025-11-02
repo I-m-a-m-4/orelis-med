@@ -49,7 +49,10 @@ export default function SupportPage() {
 
     useEffect(() => {
         if (scrollAreaRef.current) {
-            scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+            const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
+            }
         }
     }, [messages]);
 
@@ -179,7 +182,7 @@ export default function SupportPage() {
                                                         <ArrowRight className="size-3" />
                                                     </span>
                                                     <div className="pointer-events-none absolute inset-0 opacity-0 will-change-transform group-hover:animate-delayedFadeIn">
-                                                        <div className="paused absolute inset-0 animate-slidePattern opacity-100 group-hover:running" style={{ backgroundImage: "repeating-linear-gradient(45deg, transparent 0px, transparent 2px, hsl(var(--primary) / 0.5) 2px, hsl(var(--primary) / 0.5) 3px, transparent 3px, transparent 5px)", backgroundSize: "7.07px 7.07px" }} />
+                                                        <div className="paused absolute inset-0 animate-slidePattern opacity-100 group-hover:running" style={{backgroundImage: "repeating-linear-gradient(45deg, transparent 0px, transparent 2px, hsl(var(--primary) / 0.5) 2px, hsl(var(--primary) / 0.5) 3px, transparent 3px, transparent 5px)", backgroundSize: "7.07px 7.07px"}} />
                                                     </div>
                                                 </div>
                                             </AccordionTrigger>

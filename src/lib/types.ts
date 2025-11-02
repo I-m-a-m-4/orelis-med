@@ -69,6 +69,7 @@ export interface NavItem {
     label: string;
     icon: LucideIcon;
     roles: UserRole[];
+    superAdmin?: boolean;
 }
 
 export interface Clinic {
@@ -114,4 +115,8 @@ export interface Notification {
     read: boolean;
     timestamp: string; // ISO string
     link?: string;
+}
+
+export interface Broadcast extends Notification {
+    target: 'all' | string; // 'all' or a specific clinicId
 }

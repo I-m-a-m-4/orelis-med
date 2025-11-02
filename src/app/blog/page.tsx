@@ -1,9 +1,8 @@
 
 import type { Metadata } from 'next';
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeAdminApp } from '@/firebase/admin';
 import type { BlogPost } from '@/lib/types';
 import { BlogClientPage } from './client-page';
+import { blogPosts } from '@/lib/blog-data';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -11,37 +10,10 @@ export const metadata: Metadata = {
 };
 
 async function getPosts(): Promise<BlogPost[]> {
-    try {
-        const adminApp = await initializeAdminApp();
-        const firestore = getFirestore(adminApp);
-        const postsRef = firestore.collection('blogPosts');
-        // To avoid needing a composite index, we fetch all posts and filter/sort in code.
-        const snapshot = await postsRef.orderBy('updatedAt', 'desc').get();
-
-        if (snapshot.empty) {
-            return [];
-        }
-
-        const posts: BlogPost[] = [];
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            // Filter for published posts here
-            if (data.status === 'published') {
-                posts.push({
-                    id: doc.id,
-                    ...data,
-                    // Ensure date fields are serializable
-                    publishedAt: data.publishedAt ? new Date(data.publishedAt).toISOString() : null,
-                    updatedAt: data.updatedAt ? new Date(data.updatedAt).toISOString() : null,
-                } as BlogPost);
-            }
-        });
-        
-        return posts;
-    } catch (error) {
-        console.error("Error fetching posts:", error);
-        return []; // Return empty array on error
-    }
+    // For now, we return the hardcoded posts.
+    // This function can be updated later to fetch dynamic posts from a CMS or Firestore
+    // and merge them with the hardcoded posts.
+    return blogPosts.sort((a, b) => new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime());
 }
 
 export default async function BlogPage() {

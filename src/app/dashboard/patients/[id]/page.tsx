@@ -7,10 +7,13 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, FileText, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, User as UserIcon, Download, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { getInitials } from '@/lib/utils';
+import Link from 'next/link';
 
 function DetailItem({ label, value }: { label: string, value: string | undefined | null }) {
     if (!value) return null;
@@ -39,6 +42,22 @@ export default function PatientDetailPage() {
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+    
+    const handlePrint = () => {
+        window.print();
+    };
+
+    const handleDownload = () => {
+        if (!patient) return;
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(patient, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `patient_${patient.id}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    };
+
 
     if (patientLoading) {
         return (
@@ -70,7 +89,7 @@ export default function PatientDetailPage() {
     if (!patient) {
         return (
             <div className="flex flex-col gap-4 items-center justify-center h-full noisy-bg">
-                <Alert variant="destructive" className="max-w-md border-dashed">
+                <Alert variant="destructive" className="border-dashed">
                     <FileText className="h-4 w-4" />
                     <AlertTitle>Patient Not Found</AlertTitle>
                     <AlertDescription>
@@ -85,7 +104,7 @@ export default function PatientDetailPage() {
     if (userProfile && userProfile.role !== 'patient' && userProfile.clinicId !== patient.clinicId) {
          return (
             <div className="flex flex-col gap-4 items-center justify-center h-full noisy-bg">
-                <Alert variant="destructive" className="max-w-md border-dashed">
+                <Alert variant="destructive" className="border-dashed">
                     <FileText className="h-4 w-4" />
                     <AlertTitle>Access Denied</AlertTitle>
                     <AlertDescription>
@@ -120,14 +139,16 @@ export default function PatientDetailPage() {
     };
 
     return (
-        <div className="flex flex-col gap-6 noisy-bg">
-            <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-6 noisy-bg" id="printable-area">
+            <div className="flex items-center gap-4 print:hidden">
                  <Button variant="outline" size="icon" onClick={() => router.back()}>
                     <ArrowLeft />
                  </Button>
                 <h1 className="font-semibold text-lg md:text-2xl">Patient Details</h1>
-                <div className="ml-auto">
-                    <Button><Edit className="mr-2" />Edit Patient</Button>
+                <div className="ml-auto flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" />Print</Button>
+                    <Button variant="outline" size="sm" onClick={handleDownload}><Download className="mr-2 h-4 w-4" />Download</Button>
+                    <Button asChild><Link href={`/dashboard/patients/${patient.id}/edit`}><Edit className="mr-2 h-4 w-4" />Edit Patient</Link></Button>
                 </div>
             </div>
 
@@ -136,9 +157,9 @@ export default function PatientDetailPage() {
                     <Card className="border-dashed">
                         <CardHeader>
                             <div className="flex flex-col items-center text-center gap-4">
-                                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center border-2 border-dashed">
-                                    <UserIcon className="h-12 w-12 text-muted-foreground" />
-                                </div>
+                                <Avatar className="h-24 w-24 text-3xl">
+                                    <AvatarFallback>{getInitials(`${patient.firstName} ${patient.surname}`)}</AvatarFallback>
+                                </Avatar>
                                 <div className="space-y-1">
                                     <CardTitle className="text-2xl">{patient.firstName} {patient.surname}</CardTitle>
                                     <CardDescription>{patient.email}</CardDescription>

@@ -50,6 +50,7 @@ const Toast = React.forwardRef<
       ref={ref}
       className={cn(toastVariants({ variant }), className)}
       {...props}
+      data-variant={variant}
     />
   )
 })
@@ -96,6 +97,7 @@ const ToastTitle = React.forwardRef<
     ref={ref}
     className={cn("text-sm font-semibold", className)}
     {...props}
+    data-slot="title"
   />
 ))
 ToastTitle.displayName = ToastPrimitives.Title.displayName
@@ -108,6 +110,7 @@ const ToastDescription = React.forwardRef<
     ref={ref}
     className={cn("text-sm opacity-90", className)}
     {...props}
+    data-slot="description"
   />
 ))
 ToastDescription.displayName = ToastPrimitives.Description.displayName

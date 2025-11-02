@@ -33,7 +33,7 @@ export function PricingClientPage() {
                             <div>
                                 <h3 className="text-2xl font-semibold text-white font-headline">Starter</h3>
                                 <p className="mt-4 text-zinc-300">For small practices and solo practitioners getting started.</p>
-                                <p className="mt-8 text-4xl font-bold text-white">$49 <span className="text-xl font-normal text-zinc-400">/mo</span></p>
+                                <p className="mt-8 text-4xl font-bold text-white">₦25,000 <span className="text-xl font-normal text-zinc-400">/mo</span></p>
                                 <ul className="mt-8 space-y-4 text-zinc-300">
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> Up to 500 Patients</li>
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> Appointment Scheduling</li>
@@ -54,7 +54,7 @@ export function PricingClientPage() {
                             <div>
                                 <h3 className="text-2xl font-semibold text-emerald-300 font-headline">Pro</h3>
                                 <p className="mt-4 text-zinc-300">For growing practices that need more power and features.</p>
-                                <p className="mt-8 text-4xl font-bold text-white">$99 <span className="text-xl font-normal text-zinc-400">/mo</span></p>
+                                <p className="mt-8 text-4xl font-bold text-white">₦50,000 <span className="text-xl font-normal text-zinc-400">/mo</span></p>
                                 <ul className="mt-8 space-y-4 text-zinc-300">
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> Up to 2,000 Patients</li>
                                     <li className="flex items-center gap-3"><Check className="h-5 w-5 text-emerald-400" /> AI-Powered Reminders</li>

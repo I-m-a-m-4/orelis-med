@@ -3,7 +3,7 @@
 import { PlusCircle, ListFilter, MoreHorizontal, UserCog, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuCheckboxItem } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,6 +16,7 @@ import { useState, useMemo } from "react";
 import { useDoc } from "@/firebase";
 import { changeStaffRoleAction } from "@/app/actions";
 import { useToast } from "@/hooks/use-toast";
+import { LoadingAnimation } from "@/components/layout/loading-animation";
 
 function ChangeRoleSubMenu({ userId, clinicId }: { userId: string, clinicId: string }) {
     const { toast } = useToast();
@@ -67,7 +68,6 @@ export default function StaffPage() {
 
     const staffQuery = useMemo(() => {
         if (!firestore || !userProfile?.clinicId) return null;
-        // Corrected Query: Only fetch users from the same clinic
         return query(
             collection(firestore, 'users'), 
             where('clinicId', '==', userProfile.clinicId)
@@ -80,14 +80,13 @@ export default function StaffPage() {
 
     const filteredStaff = useMemo(() => {
         if (!staff) return [];
-        // Filter out patients locally
         return staff.filter(member => member.role !== 'patient' && roleFilter.includes(member.role));
     }, [staff, roleFilter]);
 
     const isLoading = userLoading || profileLoading || staffLoading;
 
     if (isLoading) {
-        return <div>Loading...</div>
+        return <LoadingAnimation />;
     }
 
     if (userProfile?.role !== 'admin') {
@@ -155,11 +154,7 @@ export default function StaffPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center">Loading staff...</TableCell>
-                                </TableRow>
-                            ) : filteredStaff.map(member => (
+                            {filteredStaff.map(member => (
                                 <TableRow key={member.uid}>
                                     <TableCell className="font-medium">{member.name}</TableCell>
                                     <TableCell>
@@ -182,7 +177,7 @@ export default function StaffPage() {
                                         <DropdownMenuContent align="end">
                                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                             <DropdownMenuItem>Edit</DropdownMenuItem>
-                                            {member.uid !== user?.uid && <ChangeRoleSubMenu userId={member.uid} clinicId={userProfile.clinicId!} />}
+                                            {userProfile && member.uid !== user?.uid && <ChangeRoleSubMenu userId={member.uid} clinicId={userProfile.clinicId!} />}
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
                                         </DropdownMenuContent>

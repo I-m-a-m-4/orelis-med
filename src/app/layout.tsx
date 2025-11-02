@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+    manifest: '/manifest.json',
   keywords: [
     'Clinic Management Software',
     'Patient Management',

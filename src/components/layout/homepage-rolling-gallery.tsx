@@ -6,7 +6,7 @@ import Image from 'next/image';
 export const HomepageRollingGallery = () => {
     const galleryCylinderRef = useRef<HTMLDivElement>(null);
     const IMGS = [
-   "/nurse.jpg",
+  "/nurse.jpg",
       "https://images.unsplash.com/photo-1584515933487-779824d29309?q=80&w=800&auto=format&fit=crop",
       "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?q=80&w=800&auto=format&fit=crop",
       "/hospital.jpg",
@@ -26,64 +26,88 @@ export const HomepageRollingGallery = () => {
         let velocity = -0.05; // Start with a slow auto-rotation
         let animationFrameId: number;
 
-        const faceCount = IMGS.length;
-        
-        // Adjust circumference based on window width to prevent overlap
-        const getCircumference = () => window.innerWidth <= 640 ? 2200 : 2400;
-
         const updateGallery = () => {
-        if (!isDragging) {
-            rotation += velocity;
-            velocity *= 0.95; // Apply friction to slow down
-            if (Math.abs(velocity) < 0.01) {
-                velocity = -0.05; // Re-apply auto-rotation if it stops
+            if (!isDragging) {
+                rotation += velocity;
+                velocity *= 0.95; // Apply friction to slow down
+                if (Math.abs(velocity) < 0.01) {
+                    velocity = -0.05; // Re-apply auto-rotation if it stops
+                }
             }
-        }
-        if (galleryElement) {
-            galleryElement.style.transform = `rotateY(${rotation}deg)`;
-        }
-        animationFrameId = requestAnimationFrame(updateGallery);
+            if (galleryElement) {
+                galleryElement.style.transform = `rotateY(${rotation}deg)`;
+            }
+            animationFrameId = requestAnimationFrame(updateGallery);
         };
 
         const handleMouseDown = (e: MouseEvent) => {
-        isDragging = true;
-        dragStart = e.clientX;
-        velocity = 0; // Stop auto-rotation on drag
-        if (galleryElement) {
-            galleryElement.style.transition = 'none';
-            galleryElement.style.cursor = 'grabbing';
-        }
-        if(animationFrameId) cancelAnimationFrame(animationFrameId);
-        updateGallery();
+            isDragging = true;
+            dragStart = e.clientX;
+            velocity = 0; // Stop auto-rotation on drag
+            if (galleryElement) {
+                galleryElement.style.transition = 'none';
+                galleryElement.style.cursor = 'grabbing';
+            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            updateGallery();
         };
 
         const handleMouseMove = (e: MouseEvent) => {
-        if (!isDragging) return;
-        const deltaX = e.clientX - dragStart;
-        rotation += deltaX * 0.2; // Drag speed factor
-        velocity = deltaX * 0.1; // Set velocity for inertia
-        dragStart = e.clientX;
+            if (!isDragging) return;
+            const deltaX = e.clientX - dragStart;
+            rotation += deltaX * 0.2; // Drag speed factor
+            velocity = deltaX * 0.1; // Set velocity for inertia
+            dragStart = e.clientX;
         };
 
         const handleMouseUp = () => {
-        isDragging = false;
-        if (galleryElement) {
-            galleryElement.style.cursor = 'grab';
-        }
+            isDragging = false;
+            if (galleryElement) {
+                galleryElement.style.cursor = 'grab';
+            }
         };
 
-        const parent = galleryElement.parentElement?.parentElement?.parentElement;
+        const handleTouchStart = (e: TouchEvent) => {
+            isDragging = true;
+            dragStart = e.touches[0].clientX;
+            velocity = 0;
+             if (galleryElement) {
+                galleryElement.style.transition = 'none';
+            }
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            updateGallery();
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!isDragging) return;
+            const deltaX = e.touches[0].clientX - dragStart;
+            rotation += deltaX * 0.2;
+            velocity = deltaX * 0.1;
+            dragStart = e.touches[0].clientX;
+        };
+
+        const handleTouchEnd = () => {
+            isDragging = false;
+        };
+
+        const parent = galleryElement.parentElement;
         parent?.addEventListener('mousedown', handleMouseDown);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
-        
+        parent?.addEventListener('touchstart', handleTouchStart);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('touchend', handleTouchEnd);
+
         updateGallery();
 
         return () => {
-        parent?.removeEventListener('mousedown', handleMouseDown);
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
-        cancelAnimationFrame(animationFrameId);
+            parent?.removeEventListener('mousedown', handleMouseDown);
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            parent?.removeEventListener('touchstart', handleTouchStart);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', handleTouchEnd);
+            cancelAnimationFrame(animationFrameId);
         };
     }, [IMGS]);
 
@@ -117,5 +141,3 @@ export const HomepageRollingGallery = () => {
         </div>
     );
 };
-
-    

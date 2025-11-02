@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Hospital, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -16,26 +16,23 @@ import {
 } from '@/components/ui/sidebar';
 import type { NavItem, UserProfile } from '@/lib/types';
 import { OrelisLogo } from '@/components/layout/orelis-logo';
-import { useUser } from '@/firebase';
 
-const staffNavItems: NavItem[] = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'doctor', 'receptionist'] },
-    { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'doctor', 'receptionist'] },
+const allNavItems: NavItem[] = [
+    // Common
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
+    { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['admin', 'doctor', 'receptionist', 'patient'] },
+    
+    // Staff
     { href: '/dashboard/patients', label: 'Patients', icon: Users, roles: ['admin', 'doctor', 'receptionist'] },
     { href: '/dashboard/staff', label: 'Staff', icon: UserPlus, roles: ['admin'] },
-    { href: '/dashboard/hospital', label: 'Hospital', icon: Hospital, roles: ['admin'] },
-];
 
-const patientNavItems: NavItem[] = [
-    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['patient'] },
+    // Patient
     { href: '/dashboard/my-records', label: 'My Records', icon: FileText, roles: ['patient'] },
-    { href: '/dashboard/appointments', label: 'Appointments', icon: Calendar, roles: ['patient'] },
-];
 
-const superAdminNavItems: NavItem[] = [
-    { href: '/super-admin', label: 'Overview', icon: Shield, roles: [] },
-    { href: '/super-admin/blog', label: 'Blog', icon: Newspaper, roles: [] },
-    { href: '/super-admin/notifications', label: 'Notifications', icon: Bell, roles: [] },
+    // Super Admin
+    { href: '/super-admin', label: 'Overview', icon: Shield, roles: [], superAdmin: true },
+    { href: '/super-admin/blog', label: 'Blog', icon: Newspaper, roles: [], superAdmin: true },
+    { href: '/super-admin/notifications', label: 'Broadcasts', icon: Bell, roles: [], superAdmin: true },
 ];
 
 interface AppSidebarProps {
@@ -46,19 +43,15 @@ interface AppSidebarProps {
 export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
   const pathname = usePathname();
   const { state } = useSidebar();
-  const { user } = useUser();
   
   const isSuperAdminRoute = pathname.startsWith('/super-admin');
 
   const getNavItems = () => {
-      if (!userProfile) return [];
+      if (isLoading || !userProfile) return [];
       if (isSuperAdminRoute) {
-          return superAdminNavItems;
+          return allNavItems.filter(item => item.superAdmin);
       }
-      if (userProfile.role === 'patient') {
-          return patientNavItems;
-      }
-      return staffNavItems.filter(item => item.roles.includes(userProfile.role));
+      return allNavItems.filter(item => !item.superAdmin && item.roles.includes(userProfile.role));
   }
   
   const filteredNavItems = getNavItems();
@@ -99,47 +92,31 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
       </SidebarContent>
       <SidebarFooter className="p-2">
         <SidebarMenu>
-            {!isSuperAdminRoute && (
-              <>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                        asChild
-                        isActive={pathname.startsWith('/dashboard/notifications')}
-                        tooltip="Notifications"
-                    >
-                        <Link href="/dashboard/notifications">
-                            <Bell />
-                            <span>Notifications</span>
-                        </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/dashboard/support')}
-                    tooltip="Support"
-                  >
-                    <Link href="/dashboard/support">
-                      <LifeBuoy />
-                      <span>Support</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={pathname.startsWith('/dashboard/settings')}
-                    tooltip="Settings"
-                  >
-                    <Link href="/dashboard/settings">
-                      <Settings />
-                      <span>Settings</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </>
-            )}
-          </SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/dashboard/support')}
+              tooltip="Support"
+            >
+              <Link href="/dashboard/support">
+                <LifeBuoy />
+                <span>Support</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              isActive={pathname.startsWith('/dashboard/settings')}
+              tooltip="Settings"
+            >
+              <Link href="/dashboard/settings">
+                <Settings />
+                <span>Settings</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
     </>
   );

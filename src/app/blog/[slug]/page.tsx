@@ -1,6 +1,4 @@
 
-import { getFirestore } from 'firebase-admin/firestore';
-import { initializeAdminApp } from '@/firebase/admin';
 import type { BlogPost } from '@/lib/types';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
@@ -9,19 +7,19 @@ import remarkGfm from 'remark-gfm';
 import { Footer } from '@/components/layout/footer';
 import { PublicHeader } from '@/components/layout/public-header';
 import Link from 'next/link';
+import { blogPosts } from '@/lib/blog-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getInitials } from '@/lib/utils';
+import { Twitter } from 'lucide-react';
 
-async function getPost(slug: string) {
-    const adminApp = await initializeAdminApp();
-    const firestore = getFirestore(adminApp);
-    const postsRef = firestore.collection('blogPosts');
-    const snapshot = await postsRef.where('slug', '==', slug).where('status', '==', 'published').limit(1).get();
 
-    if (snapshot.empty) {
-        return null;
-    }
-
-    const postDoc = snapshot.docs[0];
-    return { id: postDoc.id, ...postDoc.data() } as BlogPost;
+async function getPost(slug: string): Promise<BlogPost | null> {
+    const post = blogPosts.find(p => p.slug === slug);
+    
+    // In a real app, you might also query Firestore for dynamic posts
+    // if the post is not found in the hardcoded list.
+    
+    return post || null;
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }) {
@@ -54,35 +52,63 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     }
 
     return (
-         <div className="bg-black text-white selection:bg-zinc-700 selection:text-white">
-             <PublicHeader />
-            <main className="pt-16">
-                 <article className="py-24 sm:py-32 noisy-bg">
-                    <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-12">
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold my-2 font-headline">
-                                {post.title}
-                            </h1>
-                             <p className="font-sans my-4 text-lg text-zinc-400">
-                                Published by <Link href="/" className="hover:text-primary hover:underline">{post.authorName}</Link> on {new Date(post.publishedAt!).toLocaleDateString()}
-                            </p>
-                        </div>
-
-                        {post.featuredImage && (
-                            <div className="relative w-full h-96 mb-12 border border-dashed border-zinc-800">
+        <div className="bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+            <PublicHeader />
+            <main className="pt-16 noisy-bg">
+                <article>
+                    <header className="relative py-24 sm:py-32 md:py-40">
+                         <div className="absolute inset-0">
+                            {post.featuredImage && (
                                 <Image
                                     src={post.featuredImage}
                                     alt={post.title}
                                     fill
                                     className="object-cover"
+                                    priority
                                 />
-                            </div>
-                        )}
-                        
-                        <div className="prose prose-invert prose-lg mx-auto max-w-none prose-p:text-zinc-300 prose-headings:text-primary prose-headings:font-headline prose-a:text-primary prose-strong:text-white">
+                            )}
+                             <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/30" />
+                        </div>
+                        <div className="relative mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
+                             <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold my-2 font-headline text-white drop-shadow-lg">
+                                {post.title}
+                            </h1>
+                             <div className="mt-6 flex items-center justify-center gap-4">
+                                <Avatar>
+                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
+                                    <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold text-white">{post.authorName}</p>
+                                    <p className="font-sans text-sm text-zinc-400">
+                                        Published on {new Date(post.publishedAt!).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                    </p>
+                                </div>
+                             </div>
+                        </div>
+                    </header>
+                
+                    <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-16">
+                        <div className="prose prose-invert prose-lg mx-auto max-w-none prose-p:text-zinc-300 prose-headings:text-primary prose-headings:font-headline prose-a:text-primary prose-strong:text-white prose-blockquote:border-l-primary prose-blockquote:text-zinc-400">
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                 {post.content}
                             </ReactMarkdown>
+                        </div>
+                        
+                        <div className="mt-16 border-t border-dashed border-border pt-8 flex flex-col sm:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-4">
+                                <Avatar>
+                                    <AvatarImage src={`https://i.pravatar.cc/150?u=${post.authorId}`} alt={post.authorName} />
+                                    <AvatarFallback>{getInitials(post.authorName)}</AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <p className="font-semibold text-white">About the Author</p>
+                                    <p className="text-zinc-400 text-sm">The Orelis Team consists of healthcare experts, developers, and designers passionate about improving patient care through technology.</p>
+                                </div>
+                            </div>
+                            <Link href="#" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors">
+                                <Twitter className="h-4 w-4" /> Follow on Twitter
+                            </Link>
                         </div>
                     </div>
                 </article>
@@ -94,12 +120,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
 // This function tells Next.js which slugs to pre-render at build time.
 export async function generateStaticParams() {
-    const adminApp = await initializeAdminApp();
-    const firestore = getFirestore(adminApp);
-    const postsRef = firestore.collection('blogPosts');
-    const snapshot = await postsRef.where('status', '==', 'published').get();
+    // In a real app, you would also fetch dynamic slugs from your CMS/database
+    const allPosts = blogPosts;
     
-    return snapshot.docs.map(doc => ({
-        slug: doc.data().slug,
+    return allPosts.map(post => ({
+        slug: post.slug,
     }));
 }
