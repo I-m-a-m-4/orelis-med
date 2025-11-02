@@ -1,5 +1,6 @@
 
 import type { LucideIcon } from "lucide-react";
+import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'admin' | 'doctor' | 'receptionist' | 'patient';
 
@@ -122,4 +123,8 @@ export interface Broadcast extends Notification {
     target: 'all' | string; // 'all' or a specific clinicId
 }
 
-    
+export interface WaitlistEntry {
+    id: string;
+    email: string;
+    timestamp: Timestamp;
+}

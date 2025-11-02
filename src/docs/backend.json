@@ -248,6 +248,22 @@
         "status"
       ]
     },
+    "Waitlist": {
+      "title": "Waitlist Entry",
+      "description": "An email collected from the waitlist page.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "timestamp"]
+    },
     "Mail": {
       "title": "Mail",
       "description": "Represents an email to be sent by the Trigger Email extension.",
@@ -466,6 +482,12 @@
       },
       "description": "Stores blog posts."
     },
+    "/waitlist/{entryId}": {
+      "schema": {
+        "$ref": "#/entities/Waitlist"
+      },
+      "description": "Stores email submissions from the waitlist page."
+    },
     "/patients/{patientId}/prescriptions/{prescriptionId}": {
       "schema": {
         "$ref": "#/entities/Prescription"
@@ -492,5 +514,3 @@
     }
   }
 }
-
-    

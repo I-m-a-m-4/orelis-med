@@ -3,7 +3,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital } from 'lucide-react';
+import { Stethoscope, LayoutDashboard, Users, Calendar, Settings, UserPlus, LifeBuoy, Shield, FileText, Newspaper, Bell, Hospital, Mailbox } from 'lucide-react';
 import {
   SidebarHeader,
   SidebarContent,
@@ -33,6 +33,7 @@ const allNavItems: NavItem[] = [
     { href: '/super-admin', label: 'Overview', icon: Shield, roles: [], superAdmin: true },
     { href: '/super-admin/blog', label: 'Blog', icon: Newspaper, roles: [], superAdmin: true },
     { href: '/super-admin/notifications', label: 'Broadcasts', icon: Bell, roles: [], superAdmin: true },
+    { href: '/super-admin/waitlist', label: 'Waitlist', icon: Mailbox, roles: [], superAdmin: true },
 ];
 
 interface AppSidebarProps {

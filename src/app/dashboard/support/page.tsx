@@ -1,15 +1,17 @@
+
 'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { LifeBuoy, Bot, Send, ArrowRight, User } from "lucide-react";
+import { LifeBuoy, Bot, Send, ArrowRight, User, Maximize, X } from "lucide-react";
 import { useState, useRef, useEffect, type FormEvent } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { askSupportQuestion, type SupportChatInput } from "@/app/actions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog";
 
 const faqItems = [
   {
@@ -39,14 +41,14 @@ type Message = {
     content: string;
 };
 
-export default function SupportPage() {
-    const { toast } = useToast();
-    const [messages, setMessages] = useState<Message[]>([]);
-    const [input, setInput] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-
+function ChatView({ messages, input, setInput, handleSubmit, isLoading, scrollAreaRef }: {
+    messages: Message[];
+    input: string;
+    setInput: (value: string) => void;
+    handleSubmit: (e: FormEvent) => Promise<void>;
+    isLoading: boolean;
+    scrollAreaRef: React.RefObject<HTMLDivElement>;
+}) {
     useEffect(() => {
         if (scrollAreaRef.current) {
             const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -54,7 +56,75 @@ export default function SupportPage() {
                 viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
             }
         }
-    }, [messages]);
+    }, [messages, scrollAreaRef]);
+
+    return (
+        <div className="flex flex-col h-full bg-background">
+            <ScrollArea className="flex-grow p-4 space-y-4" ref={scrollAreaRef}>
+                <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
+                        <Bot size={18} />
+                    </div>
+                    <div className="bg-muted/50 p-3 rounded-lg max-w-[80%]">
+                        <p className="text-sm">Hello! I'm the Orelis AI assistant. How can I help you today?</p>
+                    </div>
+                </div>
+                 {messages.map((message, index) => (
+                    <div key={index} className={`flex items-start gap-3 mt-4 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                        {message.role === 'ai' && (
+                            <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
+                                <Bot size={18} />
+                            </div>
+                        )}
+                        <div className={`p-3 rounded-lg max-w-[80%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted/50'}`}>
+                            <div className="prose prose-sm prose-invert max-w-none prose-a:text-primary hover:prose-a:underline">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {message.content}
+                                </ReactMarkdown>
+                            </div>
+                        </div>
+                         {message.role === 'user' && (
+                            <div className="p-2 rounded-full bg-muted/80 text-foreground flex-shrink-0">
+                                <User size={18} />
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {isLoading && (
+                    <div className="flex items-start gap-3 mt-4">
+                        <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
+                            <Bot size={18} />
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded-lg max-w-[80%]">
+                           <div className="loading-dots text-primary"><span/><span/><span/></div>
+                        </div>
+                    </div>
+                )}
+            </ScrollArea>
+            <form onSubmit={handleSubmit} className="p-4 border-t border-dashed flex items-center gap-2 bg-background">
+                <Input
+                    placeholder="Type your message..."
+                    className="flex-grow"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    disabled={isLoading}
+                />
+                <Button type="submit" isLoading={isLoading} size="icon">
+                    <Send size={18} />
+                </Button>
+            </form>
+        </div>
+    );
+}
+
+export default function SupportPage() {
+    const { toast } = useToast();
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [input, setInput] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [isFullScreen, setIsFullScreen] = useState(false);
+    const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const fullScreenScrollAreaRef = useRef<HTMLDivElement>(null);
 
 
     const handleSubmit = async (e: FormEvent) => {
@@ -81,7 +151,6 @@ export default function SupportPage() {
                 description: "Sorry, I couldn't process that request. Please try again.",
                 variant: "destructive",
             });
-            // Do not remove the user's message on error
         } finally {
             setIsLoading(false);
         }
@@ -94,109 +163,74 @@ export default function SupportPage() {
                 <h1 className="font-semibold text-lg md:text-2xl flex items-center gap-2"><LifeBuoy /> Support Center</h1>
             </div>
 
-            <div className="grid grid-cols-1 gap-8 items-start max-w-4xl mx-auto w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start max-w-7xl mx-auto w-full">
                 {/* AI Support Chat */}
-                <Card className="border-2 border-border/50 rounded-none">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Bot /> AI Assistant</CardTitle>
-                        <CardDescription>Ask our AI assistant for help with any questions you have.</CardDescription>
+                <Card className="border-dashed lg:col-span-1">
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <div>
+                            <CardTitle className="flex items-center gap-2"><Bot /> AI Assistant</CardTitle>
+                            <CardDescription>Ask our AI assistant for help with any questions you have.</CardDescription>
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => setIsFullScreen(true)}>
+                            <Maximize className="w-5 h-5" />
+                        </Button>
                     </CardHeader>
-                    <CardContent className="flex flex-col h-[500px]">
-                        <ScrollArea className="flex-grow bg-muted/50 p-4 space-y-4 rounded-none" ref={scrollAreaRef}>
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
-                                    <Bot size={18} />
-                                </div>
-                                <div className="bg-background p-3 rounded-lg max-w-[80%]">
-                                    <p className="text-sm">Hello! I'm the Orelis AI assistant. How can I help you today?</p>
-                                </div>
-                            </div>
-                             {messages.map((message, index) => (
-                                <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                                    {message.role === 'ai' && (
-                                        <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
-                                            <Bot size={18} />
-                                        </div>
-                                    )}
-                                    <div className={`p-3 rounded-lg max-w-[80%] ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}>
-                                        <div className="prose prose-sm prose-invert max-w-none">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                {message.content}
-                                            </ReactMarkdown>
-                                        </div>
-                                    </div>
-                                     {message.role === 'user' && (
-                                        <div className="p-2 rounded-full bg-muted/80 text-foreground flex-shrink-0">
-                                            <User size={18} />
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                            {isLoading && (
-                                <div className="flex items-start gap-3">
-                                    <div className="p-2 rounded-full bg-primary/20 text-primary flex-shrink-0">
-                                        <Bot size={18} />
-                                    </div>
-                                    <div className="bg-background p-3 rounded-lg max-w-[80%]">
-                                       <div className="loading-dots text-primary"><span/><span/><span/></div>
-                                    </div>
-                                </div>
-                            )}
-                        </ScrollArea>
-                        <form onSubmit={handleSubmit} className="mt-4 flex items-center gap-2">
-                            <Input
-                                placeholder="Type your message..."
-                                className="flex-grow rounded-none"
-                                value={input}
-                                onChange={(e) => setInput(e.target.value)}
-                                disabled={isLoading}
-                            />
-                            <Button type="submit" isLoading={isLoading} className="rounded-none">
-                                <Send size={18} />
-                            </Button>
-                        </form>
+                    <CardContent className="p-0">
+                        <div className="h-[500px]">
+                           <ChatView 
+                                messages={messages}
+                                input={input}
+                                setInput={setInput}
+                                handleSubmit={handleSubmit}
+                                isLoading={isLoading}
+                                scrollAreaRef={scrollAreaRef}
+                           />
+                        </div>
                     </CardContent>
                 </Card>
 
                 {/* FAQ Section */}
-                <Card className="border-2 border-border/50 rounded-none">
+                <Card className="border-dashed lg:col-span-1">
                     <CardHeader>
                         <CardTitle>Frequently Asked Questions</CardTitle>
                         <CardDescription>Find answers to common questions below.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                         <ul className="col-span-full flex flex-col">
+                         <Accordion type="single" collapsible className="w-full">
                             {faqItems.map((faq) => (
-                                <li key={faq.question} className="last:[&>a]:border-b-zinc-800 last:[&>a]:hover:border-b-primary hover:[&_li_a]:border-t-transparent [&:has(+li:hover)>a]:border-b-transparent">
-                                    <Accordion type="single" collapsible>
-                                        <AccordionItem value={faq.question} className="border-b border-dashed border-zinc-800">
-                                            <AccordionTrigger className="group relative -mb-px grid gap-4 py-4 duration-0 hover:z-10 hover:no-underline md:grid-cols-[1fr_auto] md:gap-12 lg:py-6">
-                                                <div className="flex flex-col gap-2 text-left">
-                                                    <p className="font-mono text-sm leading-snug tracking-tighter text-foreground transition-colors duration-200 group-hover:text-primary lg:text-base">
-                                                        {faq.question}
-                                                    </p>
-                                                </div>
-                                                <div className="pointer-events-none relative hidden h-[25px] w-max cursor-pointer items-center justify-center overflow-clip rounded-sm border border-transparent bg-zinc-950 px-3 text-white transition-colors duration-150 group-hover:bg-zinc-800 group-hover:text-white md:ml-auto md:inline-flex">
-                                                    <span className="relative z-10 flex items-center gap-1 uppercase">
-                                                        <p className="font-mono text-[12px] uppercase leading-[100%] tracking-[-0.015rem]">View</p>
-                                                        <ArrowRight className="size-3" />
-                                                    </span>
-                                                    <div className="pointer-events-none absolute inset-0 opacity-0 will-change-transform group-hover:animate-delayedFadeIn">
-                                                        <div className="paused absolute inset-0 animate-slidePattern opacity-100 group-hover:running" style={{backgroundImage: "repeating-linear-gradient(45deg, transparent 0px, transparent 2px, hsl(var(--primary) / 0.5) 2px, hsl(var(--primary) / 0.5) 3px, transparent 3px, transparent 5px)", backgroundSize: "7.07px 7.07px"}} />
-                                                    </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pb-6">
-                                                <p className="text-muted-foreground">{faq.answer}</p>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    </Accordion>
-                                </li>
+                                <AccordionItem key={faq.question} value={faq.question} className="border-b border-dashed border-zinc-800">
+                                    <AccordionTrigger className="text-left hover:no-underline">
+                                        {faq.question}
+                                    </AccordionTrigger>
+                                    <AccordionContent>
+                                        <p className="text-muted-foreground">{faq.answer}</p>
+                                    </AccordionContent>
+                                </AccordionItem>
                             ))}
-                        </ul>
+                        </Accordion>
                     </CardContent>
                 </Card>
             </div>
+            <Dialog open={isFullScreen} onOpenChange={setIsFullScreen}>
+                <DialogContent className="max-w-full h-full md:h-[90vh] md:max-w-[80vw] flex flex-col p-0">
+                    <DialogHeader className="p-4 border-b border-dashed flex-row items-center justify-between">
+                        <DialogTitle className="flex items-center gap-2"><Bot /> AI Support Assistant</DialogTitle>
+                         <DialogClose asChild>
+                            <Button variant="ghost" size="icon">
+                                <X className="h-5 w-5" />
+                            </Button>
+                        </DialogClose>
+                    </DialogHeader>
+                     <ChatView 
+                        messages={messages}
+                        input={input}
+                        setInput={setInput}
+                        handleSubmit={handleSubmit}
+                        isLoading={isLoading}
+                        scrollAreaRef={fullScreenScrollAreaRef}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
