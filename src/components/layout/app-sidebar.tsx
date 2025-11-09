@@ -41,6 +41,14 @@ interface AppSidebarProps {
     isLoading: boolean;
 }
 
+const roleHierarchy = {
+    admin: ['admin', 'doctor', 'receptionist'],
+    doctor: ['doctor', 'receptionist'],
+    receptionist: ['receptionist'],
+    patient: ['patient'],
+};
+
+
 export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
   const pathname = usePathname();
   const { state } = useSidebar();
@@ -52,7 +60,11 @@ export function AppSidebar({ userProfile, isLoading }: AppSidebarProps) {
       if (isSuperAdminRoute) {
           return allNavItems.filter(item => item.superAdmin);
       }
-      return allNavItems.filter(item => !item.superAdmin && item.roles.includes(userProfile.role));
+      
+      const userRoles = roleHierarchy[userProfile.role] || [userProfile.role];
+      return allNavItems.filter(item => 
+          !item.superAdmin && item.roles.some(role => userRoles.includes(role))
+      );
   }
   
   const filteredNavItems = getNavItems();

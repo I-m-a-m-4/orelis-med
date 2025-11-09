@@ -139,7 +139,7 @@ export default function AddPatientPage() {
         <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Personal Information */}
-                <Card className="border-dashed md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader>
                         <CardTitle className="text-lg">Personal Information</CardTitle>
                     </CardHeader>
@@ -212,7 +212,7 @@ export default function AddPatientPage() {
                 </Card>
 
                     {/* Contact Information */}
-                <Card className="border-dashed md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader>
                         <CardTitle className="text-lg">Contact Information</CardTitle>
                     </CardHeader>
@@ -233,7 +233,7 @@ export default function AddPatientPage() {
                 </Card>
 
                 {/* Other Information */}
-                <Card className="border-dashed md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader>
                         <CardTitle className="text-lg">Other Information</CardTitle>
                     </CardHeader>
@@ -258,7 +258,7 @@ export default function AddPatientPage() {
                 </Card>
                 
                 {/* Next of Kin */}
-                <Card className="border-dashed md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader>
                         <CardTitle className="text-lg">Next of Kin</CardTitle>
                     </CardHeader>
@@ -283,7 +283,7 @@ export default function AddPatientPage() {
                 </Card>
                 
                 {/* Custom Fields */}
-                <Card className="border-dashed col-span-1 md:col-span-2">
+                <Card className="col-span-1 md:col-span-2 border-dashed">
                     <CardHeader className='flex-row items-center justify-between'>
                         <div className="flex flex-col">
                             <CardTitle className="text-lg">Custom Patient Data</CardTitle>
@@ -296,7 +296,7 @@ export default function AddPatientPage() {
                     </CardHeader>
                     <CardContent className="space-y-4 pt-2">
                         {customFields.map((field) => (
-                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start border-t border-dashed pt-4">
+                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-start border-t pt-4">
                                     <div className="space-y-2 col-span-12 md:col-span-3">
                                     <Label className="text-xs text-muted-foreground">Field Name</Label>
                                     <Input 
@@ -356,5 +356,3 @@ export default function AddPatientPage() {
     </div>
   )
 }
-
-    

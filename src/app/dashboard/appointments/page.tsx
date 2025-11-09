@@ -188,7 +188,7 @@ function AppointmentList({ appointments, loading }: { appointments: WithPendingW
                 const patient = patientsData[appt.patientId];
                 const clinic = clinicsData[appt.clinicId];
                 return (
-                    <Card key={appt.id} className={`border-dashed ${appt.hasPendingWrites ? 'bg-muted/30' : ''}`}>
+                    <Card key={appt.id} className={`${appt.hasPendingWrites ? 'bg-muted/30' : ''}`}>
                         <CardContent className="p-4 flex items-center gap-4">
                             <Avatar className="h-14 w-14">
                                 <AvatarFallback className="text-xl">{getInitials(appt.patientName)}</AvatarFallback>
@@ -272,6 +272,8 @@ export default function AppointmentsPage() {
 
     const isLoading = loading || profileLoading;
 
+    const canSchedule = userProfile?.role === 'admin' || userProfile?.role === 'doctor' || userProfile?.role === 'receptionist';
+
     return (
         <div className="flex flex-col gap-4 noisy-bg">
             <div className="flex items-center">
@@ -295,7 +297,7 @@ export default function AppointmentsPage() {
                         <DropdownMenuCheckboxItem>Patient</DropdownMenuCheckboxItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                     {userProfile?.role !== 'patient' && (
+                     {canSchedule && (
                         <Button size="sm" className="h-8 gap-1" asChild>
                             <Link href="/dashboard/appointments/new">
                                 <CalendarPlus className="h-3.5 w-3.5" />
@@ -307,7 +309,7 @@ export default function AppointmentsPage() {
                     )}
                 </div>
             </div>
-            <div className="relative border border-dashed p-4">
+            <div className="relative border p-4">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
                     <TabsList>
                         <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
@@ -328,7 +330,3 @@ export default function AppointmentsPage() {
         </div>
     );
 }
-
-    
-
-    

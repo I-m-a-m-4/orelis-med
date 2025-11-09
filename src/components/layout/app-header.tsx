@@ -25,6 +25,7 @@ import { Badge } from '../ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { getInitials } from '@/lib/utils';
+import { CommandPalette } from './command-palette';
 
 
 function NotificationBell() {
@@ -118,36 +119,33 @@ export function AppHeader() {
   return (
     <header className="sticky top-0 z-30 flex h-auto items-center gap-4 border-b bg-background/95 backdrop-blur-sm px-4 md:px-6 py-2">
         <SidebarTrigger className="md:flex" />
-        <div className="relative ml-auto flex-1 md:grow-0">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-            type="search"
-            placeholder="Search..."
-            className="w-full rounded-lg bg-secondary pl-8 md:w-[200px] lg:w-[320px] animated-input-focus"
-            />
-        </div>
-        <NotificationBell />
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="relative h-8 w-8 rounded-full"
-              >
-                <Avatar className="h-9 w-9">
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
-                  <AvatarFallback>{user?.displayName ? getInitials(user.displayName) : <User />}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
-            <DropdownMenuItem asChild><Link href="/dashboard/support">Support</Link></DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-      </DropdownMenu>
+        
+        <CommandPalette />
+
+        <div className="ml-auto flex items-center gap-2">
+          <NotificationBell />
+          <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="relative h-8 w-8 rounded-full"
+                >
+                  <Avatar className="h-9 w-9">
+                    {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || 'User'} />}
+                    <AvatarFallback>{user?.displayName ? getInitials(user.displayName) : <User />}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild><Link href="/dashboard/settings">Settings</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild><Link href="/dashboard/support">Support</Link></DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

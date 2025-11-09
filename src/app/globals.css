@@ -857,18 +857,35 @@ nav a:hover {
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-  #printable-area, #printable-area * {
-    visibility: visible;
-  }
-  #printable-area {
-    position: absolute;
-    left: 0;
-    top: 0;
+  body, html {
+    background-color: #ffffff;
+    color: #000000;
   }
   .print-hidden {
     display: none;
+  }
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  #printable-area {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 1.5rem;
+    border: none;
+    box-shadow: none;
+    background: #ffffff;
+    color: #000000;
+  }
+  #printable-area * {
+    color: #000000 !important;
+  }
+  #printable-area .text-muted-foreground {
+    color: #555555 !important;
+  }
+   #printable-area .border-b,
+   #printable-area .border-t {
+    border-color: #dddddd !important;
   }
 }

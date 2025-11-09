@@ -1,3 +1,4 @@
+
 'use client';
 import { PlusCircle, ListFilter, MoreHorizontal, User as UserIcon, Search, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -104,7 +105,7 @@ export default function PatientsPage() {
                     </Button>
                 </div>
             </div>
-            <Card className="border-dashed">
+            <Card>
                 <CardHeader>
                     <CardTitle>Patient Records</CardTitle>
                     <CardDescription>Manage your hospital's patient records.</CardDescription>

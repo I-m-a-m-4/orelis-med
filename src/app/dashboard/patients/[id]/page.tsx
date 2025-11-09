@@ -1,28 +1,34 @@
 
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { doc } from 'firebase/firestore';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import type { Patient, UserProfile } from '@/lib/types';
+import type { Patient, UserProfile, Clinic } from '@/lib/types';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Edit, FileText, User as UserIcon, Download, Printer, Copy } from 'lucide-react';
+import { ArrowLeft, Edit, FileText, User as UserIcon, Download, Printer, Copy, BriefcaseMedical, Calendar as CalendarIcon, Heart, Phone, Mail, MapPin, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getInitials } from '@/lib/utils';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { OrelisLogo } from '@/components/layout/orelis-logo';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
-function DetailItem({ label, value }: { label: string, value: string | undefined | null }) {
+
+function DetailItem({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | undefined | null }) {
     if (!value) return null;
     return (
-        <div className="grid grid-cols-3 gap-2 text-sm">
-            <dt className="text-muted-foreground col-span-1">{label}</dt>
-            <dd className="text-foreground col-span-2">{value}</dd>
+        <div className="flex items-start gap-3">
+            <Icon className="h-4 w-4 mt-1 text-muted-foreground" />
+            <div>
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-sm font-medium text-foreground">{value}</p>
+            </div>
         </div>
     )
 }
@@ -32,6 +38,7 @@ export default function PatientDetailPage() {
     const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
+    const [isDownloading, setIsDownloading] = useState(false);
 
     const patientDocRef = useMemo(() => {
         if (!patientId || !firestore) return null;
@@ -45,20 +52,62 @@ export default function PatientDetailPage() {
         return doc(firestore, 'users', user.uid);
     }, [user, firestore]);
     const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
+
+    const clinicRef = useMemo(() => {
+        if (!patient?.clinicId || !firestore) return null;
+        return doc(firestore, 'clinics', patient.clinicId);
+    }, [patient, firestore]);
+    const { data: clinic } = useDoc<Clinic>(clinicRef);
     
     const handlePrint = () => {
         window.print();
     };
 
-    const handleDownload = () => {
-        if (!patient) return;
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(patient, null, 2));
-        const downloadAnchorNode = document.createElement('a');
-        downloadAnchorNode.setAttribute("href", dataStr);
-        downloadAnchorNode.setAttribute("download", `patient_${patient.id}.json`);
-        document.body.appendChild(downloadAnchorNode);
-        downloadAnchorNode.click();
-        downloadAnchorNode.remove();
+    const handleDownloadPdf = async () => {
+        const printableArea = document.getElementById('printable-area');
+        if (!printableArea || !patient) return;
+
+        setIsDownloading(true);
+        try {
+            const canvas = await html2canvas(printableArea, {
+                scale: 2, // Increase scale for better resolution
+                useCORS: true,
+                backgroundColor: '#0a0a0a',
+            });
+            const imgData = canvas.toDataURL('image/png');
+            
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'px',
+                format: 'a4',
+            });
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasWidth / canvasHeight;
+            const width = pdfWidth;
+            const height = width / ratio;
+
+            // If height is greater than pdfHeight, we may need to split into pages,
+            // but for a single page, we'll fit it.
+            if (height > pdfHeight) {
+                // simple fit for now
+                 pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+            } else {
+                 pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+            }
+
+            pdf.save(`patient-record-${patient.surname}-${patient.firstName}.pdf`);
+            toast({ title: 'Download Started', description: 'Your PDF is being generated.' });
+
+        } catch (error) {
+            console.error("Error generating PDF:", error);
+            toast({ title: 'Error', description: 'Could not generate PDF.', variant: 'destructive' });
+        } finally {
+            setIsDownloading(false);
+        }
     };
     
     const copyToClipboard = (text: string) => {
@@ -76,7 +125,7 @@ export default function PatientDetailPage() {
                      <Skeleton className="h-10 w-10" />
                      <Skeleton className="h-8 w-48" />
                 </div>
-                <Card className="border-dashed">
+                <Card>
                     <CardHeader>
                         <div className="flex items-center gap-4">
                             <Skeleton className="h-16 w-16 rounded-full" />
@@ -99,7 +148,7 @@ export default function PatientDetailPage() {
     if (!patient) {
         return (
             <div className="flex flex-col gap-4 items-center justify-center h-full noisy-bg">
-                <Alert variant="destructive" className="border-dashed">
+                <Alert variant="destructive">
                     <FileText className="h-4 w-4" />
                     <AlertTitle>Patient Not Found</AlertTitle>
                     <AlertDescription>
@@ -110,11 +159,10 @@ export default function PatientDetailPage() {
         )
     }
 
-    // Security Check: Ensure the staff member is from the same clinic as the patient
     if (userProfile && userProfile.role !== 'patient' && userProfile.clinicId !== patient.clinicId) {
          return (
             <div className="flex flex-col gap-4 items-center justify-center h-full noisy-bg">
-                <Alert variant="destructive" className="border-dashed">
+                <Alert variant="destructive">
                     <FileText className="h-4 w-4" />
                     <AlertTitle>Access Denied</AlertTitle>
                     <AlertDescription>
@@ -125,115 +173,103 @@ export default function PatientDetailPage() {
         )
     }
 
-    const patientDetails = {
-        'Patient ID': patient.id,
-        'Date of Birth': patient.dob ? format(new Date(patient.dob), 'PPP') : 'N/A',
-        'Sex': patient.sex,
-        'Marital Status': patient.maritalStatus,
-        'Phone': patient.phone,
-        'Email': patient.email,
-        'Address': patient.address,
-        'Occupation': patient.occupation,
-        'State of Origin': patient.origin,
-        'Tribe': patient.tribe,
-        'Religion': patient.religion,
-        'Registration Date': format(new Date(patient.registrationDate), 'PPP p'),
-    };
-    
-    const nextOfKinDetails = {
-        'Name': patient.nextOfKin?.name,
-        'Relation': patient.nextOfKin?.relation,
-        'Phone': patient.nextOfKin?.phone,
-        'Address': patient.nextOfKin?.address,
-    };
-
     return (
-        <div className="flex flex-col gap-6 noisy-bg" id="printable-area">
-            <div className="flex items-center gap-4 print:hidden">
+        <div className="flex flex-col gap-6 noisy-bg">
+            <div className="flex items-center gap-4 print-hidden">
                  <Button variant="outline" size="icon" onClick={() => router.back()}>
                     <ArrowLeft />
                  </Button>
-                <h1 className="font-semibold text-lg md:text-2xl">Patient Details</h1>
+                <h1 className="font-semibold text-lg md:text-2xl">Patient Record</h1>
                 <div className="ml-auto flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={handlePrint}><Printer className="mr-2 h-4 w-4" />Print</Button>
-                    <Button variant="outline" size="sm" onClick={handleDownload}><Download className="mr-2 h-4 w-4" />Download</Button>
+                    <Button variant="outline" size="sm" onClick={handleDownloadPdf} disabled={isDownloading}>
+                        {isDownloading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+                        {isDownloading ? 'Generating...' : 'Download PDF'}
+                    </Button>
                     <Button asChild><Link href={`/dashboard/patients/${patient.id}/edit`}><Edit className="mr-2 h-4 w-4" />Edit Patient</Link></Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 flex flex-col gap-6">
-                    <Card className="border-dashed">
-                        <CardHeader>
-                            <div className="flex flex-col items-center text-center gap-4">
-                                <Avatar className="h-24 w-24 text-3xl">
-                                    <AvatarFallback>{getInitials(`${patient.firstName} ${patient.surname}`)}</AvatarFallback>
-                                </Avatar>
-                                <div className="space-y-1">
-                                    <CardTitle className="text-2xl">{patient.firstName} {patient.surname}</CardTitle>
-                                    <CardDescription>{patient.email}</CardDescription>
-                                </div>
-                                 <Badge variant={patient.status === 'Active' ? 'default' : 'secondary'} className={patient.status === 'Active' ? 'bg-green-500/10 text-green-300' : 'bg-red-500/10 text-red-300'}>
-                                    {patient.status || 'Active'}
-                                </Badge>
-                            </div>
-                        </CardHeader>
-                    </Card>
-                    <Card className="border-dashed">
-                        <CardHeader>
-                            <CardTitle>Patient Linking Code</CardTitle>
-                            <CardDescription>Provide this code to the patient to link their account.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-center justify-center space-x-2 bg-muted p-4 rounded-md">
-                                <p className="text-2xl font-bold tracking-widest text-foreground">{patient.patientCode}</p>
-                                <Button variant="ghost" size="icon" onClick={() => copyToClipboard(patient.patientCode)}>
-                                    <Copy className="h-5 w-5 text-muted-foreground" />
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                     <Card className="border-dashed">
-                        <CardHeader>
-                            <CardTitle>Next of Kin</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <dl className="space-y-2">
-                                {Object.entries(nextOfKinDetails).map(([key, value]) => (
-                                    <DetailItem key={key} label={key} value={value} />
-                                ))}
-                            </dl>
-                        </CardContent>
-                    </Card>
-                </div>
-                 <div className="lg:col-span-2">
-                     <Card className="border-dashed">
-                        <CardHeader>
-                            <CardTitle>Patient Information</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <dl className="space-y-2">
-                                {Object.entries(patientDetails).map(([key, value]) => (
-                                    <DetailItem key={key} label={key} value={value} />
-                                ))}
-                            </dl>
-                        </CardContent>
-                    </Card>
-                    {patient.notes && (
-                        <Card className="border-dashed mt-6">
-                            <CardHeader>
-                                <CardTitle>General Notes</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-foreground whitespace-pre-wrap">{patient.notes}</p>
-                            </CardContent>
-                        </Card>
-                    )}
-                 </div>
+            <div id="printable-area" className="bg-card rounded-lg shadow-sm p-4 sm:p-8 md:p-12 border">
+                <header className="flex flex-col sm:flex-row items-center justify-between pb-8 border-b">
+                    <div className="text-center sm:text-left">
+                        <h2 className="text-3xl font-bold font-headline text-foreground">{patient.firstName} {patient.surname}</h2>
+                        <p className="text-muted-foreground">Patient ID: {patient.id}</p>
+                    </div>
+                    <div className="mt-4 sm:mt-0 flex flex-col items-center sm:items-end">
+                       {clinic ? (
+                           <>
+                             <p className="font-bold text-lg">{clinic.name}</p>
+                             <p className="text-sm text-muted-foreground">{clinic.address}</p>
+                           </>
+                       ) : <OrelisLogo />}
+                    </div>
+                </header>
 
+                <main className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <section className="md:col-span-1 space-y-6">
+                        <h3 className="text-lg font-semibold font-headline border-b pb-2">Personal Details</h3>
+                        <div className="space-y-4">
+                            <DetailItem icon={CalendarIcon} label="Date of Birth" value={patient.dob ? format(new Date(patient.dob), 'PPP') : 'N/A'} />
+                            <DetailItem icon={UserIcon} label="Sex" value={patient.sex} />
+                            <DetailItem icon={Heart} label="Marital Status" value={patient.maritalStatus} />
+                            <DetailItem icon={BriefcaseMedical} label="Occupation" value={patient.occupation} />
+                        </div>
+
+                         <h3 className="text-lg font-semibold font-headline border-b pb-2 pt-4">Contact Information</h3>
+                         <div className="space-y-4">
+                            <DetailItem icon={Phone} label="Phone" value={patient.phone} />
+                            <DetailItem icon={Mail} label="Email" value={patient.email} />
+                            <DetailItem icon={MapPin} label="Address" value={patient.address} />
+                         </div>
+                    </section>
+
+                    <section className="md:col-span-2 space-y-6">
+                        <h3 className="text-lg font-semibold font-headline border-b pb-2">Administrative Information</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <DetailItem icon={FileText} label="Registration Date" value={format(new Date(patient.registrationDate), 'PPP p')} />
+                            <DetailItem icon={UserIcon} label="Religion" value={patient.religion} />
+                            <DetailItem icon={MapPin} label="State of Origin" value={patient.origin} />
+                            <DetailItem icon={Users} label="Tribe" value={patient.tribe} />
+                        </div>
+                        {patient.patientCode && (
+                            <div className="print-hidden">
+                                <h3 className="text-lg font-semibold font-headline border-b pb-2 pt-4">Patient Linking Code</h3>
+                                <div className="flex items-center justify-between mt-2 space-x-2 bg-muted/50 p-3 rounded-md">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">Provide this code to the patient to link their account.</p>
+                                        <p className="text-xl font-bold tracking-widest text-foreground mt-1">{patient.patientCode}</p>
+                                    </div>
+                                    <Button variant="ghost" size="icon" onClick={() => copyToClipboard(patient.patientCode)}>
+                                        <Copy className="h-5 w-5 text-muted-foreground" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                        {patient.nextOfKin?.name && (
+                             <div>
+                                <h3 className="text-lg font-semibold font-headline border-b pb-2 pt-4">Next of Kin</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                    <DetailItem icon={UserIcon} label="Name" value={patient.nextOfKin.name} />
+                                    <DetailItem icon={Heart} label="Relation" value={patient.nextOfKin.relation} />
+                                    <DetailItem icon={Phone} label="Phone" value={patient.nextOfKin.phone} />
+                                    <DetailItem icon={MapPin} label="Address" value={patient.nextOfKin.address} />
+                                </div>
+                             </div>
+                        )}
+                    </section>
+                </main>
+                 {patient.notes && (
+                    <section className="mt-8 pt-8 border-t">
+                        <h3 className="text-lg font-semibold font-headline pb-2">General Notes</h3>
+                        <p className="text-sm text-foreground whitespace-pre-wrap">{patient.notes}</p>
+                    </section>
+                )}
+
+                 <footer className="mt-12 pt-4 text-center text-xs text-muted-foreground border-t">
+                    This is a confidential patient record generated by Orelis. Printed on {format(new Date(), 'PPP p')}.
+                 </footer>
             </div>
         </div>
     );
 }
-
-    

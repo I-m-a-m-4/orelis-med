@@ -1,6 +1,7 @@
+
 'use client';
 import { useActionState } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import { useFormStatus } from 'react-dom';
 import { addStaffAction, type AddStaffFormState } from '@/app/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useRouter } from 'next/navigation';
+import { useUser, useFirestore, useDoc } from '@/firebase';
+import type { UserProfile } from '@/lib/types';
+import { doc } from 'firebase/firestore';
 
 const initialState: AddStaffFormState = {
   message: '',
@@ -27,9 +31,17 @@ function SubmitButton() {
 
 export default function AddStaffPage() {
   const router = useRouter();
+  const { user } = useUser();
+  const firestore = useFirestore();
   const [state, formAction] = useActionState(addStaffAction, initialState);
   const { toast } = useToast();
   const formRef = useRef<HTMLFormElement>(null);
+
+  const userProfileRef = useMemo(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+  const { data: userProfile } = useDoc<UserProfile>(userProfileRef);
 
   useEffect(() => {
     if (state.message) {
@@ -51,6 +63,7 @@ export default function AddStaffPage() {
             <h1 className="font-semibold text-lg md:text-2xl">Add New Staff Member</h1>
         </div>
         <form ref={formRef} action={formAction}>
+            {userProfile?.clinicId && <input type="hidden" name="clinicId" value={userProfile.clinicId} />}
             <Card className="border-dashed max-w-2xl mx-auto">
                 <CardHeader>
                     <CardTitle>Create Staff Account</CardTitle>

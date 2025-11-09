@@ -56,7 +56,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             <input type="hidden" name="patientId" value={patient.id} />
             <input type="hidden" name="clinicId" value={patient.clinicId} />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader><CardTitle>Personal Information</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label htmlFor="firstName">First Name</Label><Input id="firstName" name="firstName" defaultValue={patient.firstName} /></div>
@@ -80,7 +80,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
                     </CardContent>
                 </Card>
 
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader><CardTitle>Contact Information</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label htmlFor="phone">Phone Number</Label><Input id="phone" name="phone" defaultValue={patient.phone} /></div>
@@ -89,7 +89,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
                     </CardContent>
                 </Card>
 
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader><CardTitle>Other Information</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label htmlFor="origin">State of Origin</Label><Input id="origin" name="origin" defaultValue={patient.origin} /></div>
@@ -99,7 +99,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
                     </CardContent>
                 </Card>
 
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 border-dashed">
                     <CardHeader><CardTitle>Next of Kin</CardTitle></CardHeader>
                     <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2"><Label htmlFor="nextOfKinName">Full Name</Label><Input id="nextOfKinName" name="nextOfKinName" defaultValue={patient.nextOfKin?.name} /></div>
@@ -152,4 +152,3 @@ export default function EditPatientPage() {
         </div>
     );
 }
-

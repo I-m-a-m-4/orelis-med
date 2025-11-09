@@ -570,7 +570,7 @@ export async function saveBlogPostAction(formData: FormData) {
       await firestore.collection('blogPosts').add(dataToSave);
     }
     revalidatePath('/super-admin/blog');
-    revalidatePath(`/super-admin/blog/${postId}/edit`);
+    revalidatePath(`/super-admin/blog/${postId || ''}/edit`);
     revalidatePath('/blog');
     revalidatePath(`/blog/${slug}`);
     return { success: true, message: `Blog post ${postId ? 'updated' : 'created'} successfully!` };
@@ -682,3 +682,25 @@ export async function deleteBroadcastAction(formData: FormData): Promise<{ succe
         return { success: false, message: `Failed to delete broadcast: ${errorMessage}` };
     }
 }
+
+// --- Super Admin: Delete Waitlist Entry ---
+export async function deleteWaitlistEntryAction(formData: FormData): Promise<{ success: boolean; message: string }> {
+    const adminApp = await initializeAdminApp();
+    const firestore = getFirestore(adminApp);
+    const entryId = formData.get('entryId') as string;
+
+    if (!entryId) {
+        return { success: false, message: "Entry ID is missing." };
+    }
+
+    try {
+        await firestore.collection('waitlist').doc(entryId).delete();
+        revalidatePath('/super-admin/waitlist');
+        return { success: true, message: "Waitlist entry deleted successfully." };
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+        return { success: false, message: `Failed to delete entry: ${errorMessage}` };
+    }
+}
+
+

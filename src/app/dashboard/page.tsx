@@ -65,6 +65,10 @@ const DoctorDashboard = ({ userProfile }: { userProfile: UserProfile }) => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
              <StatCard title="My Upcoming Appointments" value={appointmentsLoading ? '...' : (myUpcomingAppointments?.length || 0).toString()} icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
              <StatCard title="My Assigned Patients" value={appointmentsLoading ? '...' : (myPatientIds.size).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
+             <div className="flex items-center col-span-full md:col-span-2 lg:col-span-2 gap-4">
+                <Button asChild><Link href="/dashboard/patients/new">Add New Patient</Link></Button>
+                <Button asChild variant="secondary"><Link href="/dashboard/appointments/new">Schedule Appointment</Link></Button>
+             </div>
         </div>
     );
 }

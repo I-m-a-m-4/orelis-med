@@ -114,7 +114,7 @@ export default function NewAppointmentPage() {
                 <h1 className="font-semibold text-lg md:text-2xl">Schedule New Appointment</h1>
             </div>
             <form onSubmit={handleSubmit}>
-                <Card className="border-dashed max-w-2xl mx-auto">
+                <Card className="max-w-2xl mx-auto border-dashed">
                     <CardHeader>
                         <CardTitle>Appointment Details</CardTitle>
                         <CardDescription>Fill out the form to schedule a new appointment.</CardDescription>
@@ -178,7 +178,7 @@ export default function NewAppointmentPage() {
                                         onSelect={setAppointmentDate}
                                         initialFocus
                                     />
-                                    <div className="p-3 border-t border-border">
+                                    <div className="p-3 border-t">
                                         <Input
                                             type="time"
                                             onChange={(e) => {
