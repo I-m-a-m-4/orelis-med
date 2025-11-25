@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
-    manifest: '/manifest.json',
+  manifest: '/manifest.json',
   keywords: [
     'Clinic Management Software',
     'Patient Management',
@@ -65,9 +65,6 @@ export const metadata: Metadata = {
     images: [siteConfig.ogImage],
     creator: '@orelisapp', // Replace with your Twitter handle
   },
-    icons: {
-    icon: '/icon.png',
-  },
 };
 
 export default function RootLayout({
@@ -78,13 +75,14 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased scroll-smooth" suppressHydrationWarning>
       <head>
+        <meta name="google-site-verification" content="WGdoPB1C5sq9ITs96lwQAtR1DRpLwcKfDCN9-taB9e8" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@300;400;500;600;700&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body h-full bg-background text-foreground antialiased">
         <FirebaseClientProvider>
-          <NextTopLoader color="hsl(var(--primary))" showSpinner={false} />
+          <NextTopLoader color="hsl(var(--primary))" showSpinner={true} />
           <ThemeProvider
               attribute="class"
               defaultTheme="dark"

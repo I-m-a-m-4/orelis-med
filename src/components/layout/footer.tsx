@@ -77,10 +77,10 @@ export function Footer() {
                             </li>
                             <li>
                                 <Link
-                                href="#"
+                                href="/pitch"
                                 className="text-sm text-zinc-400 transition hover:text-white"
                                 >
-                                Security
+                                Pitch Deck
                                 </Link>
                             </li>
                             <li>
