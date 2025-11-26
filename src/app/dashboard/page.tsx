@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { useUser, useFirestore, useDoc, useCollection } from "@/firebase";
-import { collection, doc, query, where } from "firebase/firestore";
+import { collection, doc, query, where, orderBy, limit } from "firebase/firestore";
 import type { Patient, Appointment, UserProfile } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMemo } from "react";
@@ -175,19 +175,19 @@ function DashboardContent({ userProfile }: { userProfile: UserProfile }) {
     
     const patientsQuery = useMemo(() => {
         if (!firestore || !userProfile.clinicId || userProfile.role === 'patient') return null;
-        return query(collection(firestore, 'patients'), where('clinicId', '==', userProfile.clinicId));
+        return query(
+            collection(firestore, 'patients'), 
+            where('clinicId', '==', userProfile.clinicId),
+            orderBy('registrationDate', 'desc'),
+            limit(4)
+        );
     }, [firestore, userProfile]);
-    const { data: patients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
+    const { data: recentPatients, loading: patientsLoading } = useCollection<Patient>(patientsQuery);
 
     const upcomingAppointments = appointments
         ?.filter(a => new Date(a.appointmentDate) > new Date() && a.status === 'Scheduled')
         .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
         .slice(0, 5);
-
-    const recentPatients = patients
-        ?.sort((a,b) => new Date(b.registrationDate).getTime() - new Date(a.registrationDate).getTime())
-        .slice(0, 4);
-
 
     const renderDashboardByRole = () => {
         switch (userProfile.role) {
