@@ -603,7 +603,13 @@ const updatePatientSchema = z.object({
     nextOfKinAddress: z.string().optional(),
   });
   
-export async function updatePatientAction(prevState: any, formData: FormData) {
+  export type UpdatePatientActionState = {
+    message: string;
+    errors?: z.ZodError<typeof updatePatientSchema>['formErrors']['fieldErrors'];
+    isSuccess: boolean;
+  };
+
+export async function updatePatientAction(prevState: UpdatePatientActionState, formData: FormData): Promise<UpdatePatientActionState> {
     const adminApp = await initializeAdminApp();
     const firestore = getFirestore(adminApp);
     
@@ -653,12 +659,14 @@ export async function updatePatientAction(prevState: any, formData: FormData) {
         return {
             message: 'Patient details updated successfully!',
             isSuccess: true,
+            errors: undefined
         };
     } catch (error) {
         console.error("Error updating patient:", error);
         return {
             message: 'An error occurred while updating the patient.',
             isSuccess: false,
+            errors: undefined
         };
     }
 }
@@ -702,5 +710,3 @@ export async function deleteWaitlistEntryAction(formData: FormData): Promise<{ s
         return { success: false, message: `Failed to delete entry: ${errorMessage}` };
     }
 }
-
-

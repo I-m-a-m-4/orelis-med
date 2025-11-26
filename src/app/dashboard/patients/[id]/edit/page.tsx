@@ -35,7 +35,7 @@ function SubmitButton() {
 function EditPatientForm({ patient }: { patient: Patient }) {
     const router = useRouter();
     const { toast } = useToast();
-    const [state, formAction] = useActionState(updatePatientAction, { isSuccess: false });
+    const [state, formAction] = useActionState(updatePatientAction, { isSuccess: false, message: '', errors: undefined });
     const [dob, setDob] = useState<Date | undefined>(patient.dob ? new Date(patient.dob) : undefined);
 
     useEffect(() => {
