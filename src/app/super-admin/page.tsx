@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { useFirestore, useCollection } from '@/firebase';
@@ -144,7 +145,14 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
 function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoading }: { clinics: Clinic[] | null, patients: Patient[] | null, clinicsLoading: boolean, patientsLoading: boolean }) {
     
     const analyticsData = useMemo(() => {
-        if (!clinics || !patients) return null;
+        if (!clinics || !patients) return {
+            totalClinics: 0,
+            totalPatients: 0,
+            submissionsOverTime: [],
+            subscriptionDistribution: [],
+            statusDistribution: [],
+            countryDistribution: []
+        };
 
         const countOccurrences = (arr: (string | undefined)[]) => {
             const counts: { [key: string]: number } = {};
