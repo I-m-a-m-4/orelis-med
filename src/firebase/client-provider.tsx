@@ -1,4 +1,3 @@
-
 // src/firebase/client-provider.tsx
 'use client';
 import { initializeFirebase } from './index';
@@ -9,7 +8,7 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { LoadingAnimation } from '@/components/layout/loading-animation';
-import { enableIndexedDbPersistence } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager } from 'firebase/firestore';
 
 type FirebaseInstances = {
   app: FirebaseApp;
@@ -28,10 +27,12 @@ export function FirebaseClientProvider({ children }: { children: ReactNode }) {
       try {
         const instances = initializeFirebase();
         if (instances) {
-          // Explicitly enable offline persistence for Firestore.
-          // This must be done before any other Firestore operations.
-          await enableIndexedDbPersistence(instances.firestore);
-          setFirebaseInstances(instances);
+            // New way to enable persistence with multi-tab support
+            const firestore = initializeFirestore(instances.app, {
+                localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() })
+            });
+
+          setFirebaseInstances({...instances, firestore});
         }
       } catch (e: any) {
          if (e.code === 'failed-precondition') {

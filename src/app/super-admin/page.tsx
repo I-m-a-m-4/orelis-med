@@ -1,4 +1,3 @@
-
 'use client';
 import * as React from 'react';
 import { useFirestore, useCollection } from '@/firebase';
@@ -10,10 +9,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useMemo, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuPortal } from '@/components/ui/dropdown-menu';
-import { deleteClinicAction, grantInfiniteAccessAction, setExpiryDateAction, revokeAccessAction } from '../actions';
+import { deleteClinicAction, setExpiryDateAction, revokeAccessAction } from '../actions';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -21,6 +18,8 @@ import Link from 'next/link';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
+import { GrantInfiniteButton } from './grant-infinite-button';
+import AnalyticsClient from './analytics-client';
 
 function DeleteClinicDialog({ clinicId, clinicName }: { clinicId: string, clinicName: string }) {
     const { toast } = useToast();
@@ -126,8 +125,8 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
                                     </div>
                                 </PopoverContent>
                             </Popover>
-                            <DropdownMenuItem onClick={createHandler(grantInfiniteAccessAction)}>
-                                <Crown className="mr-2 h-4 w-4" /> Grant Infinite
+                             <DropdownMenuItem asChild>
+                                <GrantInfiniteButton clinicId={clinic.id!} />
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={createHandler(revokeAccessAction)}>
                                 <Ban className="mr-2 h-4 w-4" /> Revoke Access
@@ -143,93 +142,60 @@ function ClinicActions({ clinic }: { clinic: Clinic }) {
 }
 
 function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoading }: { clinics: Clinic[] | null, patients: Patient[] | null, clinicsLoading: boolean, patientsLoading: boolean }) {
-    const subscriptionData = useMemo(() => {
-        if (!clinics) return [];
-        const counts = clinics.reduce((acc, clinic) => {
-            const plan = clinic.subscription?.plan || 'N/A';
-            acc[plan] = (acc[plan] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        return Object.entries(counts).map(([name, total]) => ({ name, total }));
-
-    }, [clinics]);
     
-    const paidSubscriptions = clinics?.filter(c => c.subscription?.plan === 'price_annual' && c.subscription?.status === 'active').length || 0;
-    const trialSubscriptions = clinics?.filter(c => c.subscription?.plan === 'trial' && c.subscription?.status === 'trialing').length || 0;
-    
-    const patientRegistrationData = useMemo(() => {
-        if (!patients) return [];
-        const byMonth = patients.reduce((acc, patient) => {
-            const month = new Date(patient.registrationDate).toLocaleString('default', { month: 'short', year: 'numeric' });
-            acc[month] = (acc[month] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
+    const analyticsData = useMemo(() => {
+        if (!clinics || !patients) return null;
 
-        return Object.entries(byMonth)
-            .map(([name, total]) => ({ name, total }))
-            .sort((a,b) => new Date(a.name).getTime() - new Date(b.name).getTime());
-    }, [patients]);
-    
+        const countOccurrences = (arr: (string | undefined)[]) => {
+            const counts: { [key: string]: number } = {};
+            arr.flat().forEach(item => {
+                if (item) {
+                    counts[item] = (counts[item] || 0) + 1;
+                }
+            });
+            return Object.entries(counts).map(([name, value]) => ({ name, value }));
+        }
+
+        const totalClinics = clinics.length;
+        const totalPatients = patients.length;
+
+        const submissionsByDate: { [key: string]: number } = {};
+        patients.forEach(p => {
+            const date = format(new Date(p.registrationDate), 'MMM d');
+            submissionsByDate[date] = (submissionsByDate[date] || 0) + 1;
+        });
+        const submissionsOverTime = Object.entries(submissionsByDate).map(([date, count]) => ({ date, count }));
+
+        const subscriptionPlans = clinics.map(c => c.subscription?.plan || 'N/A');
+        const subscriptionDistribution = countOccurrences(subscriptionPlans);
+        
+        const subscriptionStatus = clinics.map(c => c.subscription?.status || 'N/A');
+        const statusDistribution = countOccurrences(subscriptionStatus);
+
+        const countries = clinics.map(c => c.country);
+        const countryDistribution = countOccurrences(countries);
+
+        return {
+            totalClinics,
+            totalPatients,
+            submissionsOverTime,
+            subscriptionDistribution,
+            statusDistribution,
+            countryDistribution
+        };
+    }, [clinics, patients]);
+
     return (
         <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Clinics" value={clinicsLoading ? '...' : (clinics?.length || 0).toString()} icon={<Hospital className="h-4 w-4 text-muted-foreground" />} />
-                <StatCard title="Total Patients" value={patientsLoading ? '...' : (patients?.length || 0).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
-                <StatCard title="Paid Subscriptions" value={clinicsLoading ? '...' : paidSubscriptions.toString()} icon={<BadgeDollarSign className="h-4 w-4 text-muted-foreground" />} />
-                <StatCard title="Trial Subscriptions" value={clinicsLoading ? '...' : trialSubscriptions.toString()} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Total Clinics" value={clinicsLoading ? '...' : (analyticsData?.totalClinics || 0).toString()} icon={<Hospital className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Total Patients" value={patientsLoading ? '...' : (analyticsData?.totalPatients || 0).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Paid Subscriptions" value={clinicsLoading ? '...' : (clinics?.filter(c => c.subscription?.plan === 'price_annual').length || 0).toString()} icon={<BadgeDollarSign className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Trial Subscriptions" value={clinicsLoading ? '...' : (clinics?.filter(c => c.subscription?.plan === 'trial').length || 0).toString()} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
             </div>
-             <div className="grid gap-4 md:grid-cols-2">
-                <Card className="border-dashed">
-                    <CardHeader>
-                        <CardTitle>Subscription Overview</CardTitle>
-                        <CardDescription>Distribution of clinics by subscription plan.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <ChartContainer config={{}} className="w-full h-[300px]">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={subscriptionData}>
-                                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3}/>
-                                    <XAxis
-                                        dataKey="name"
-                                        tickLine={false}
-                                        tickMargin={10}
-                                        axisLine={false}
-                                        tickFormatter={(value) => value.charAt(0).toUpperCase() + value.slice(1)}
-                                    />
-                                    <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
-                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={4} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-                 <Card className="border-dashed">
-                    <CardHeader>
-                        <CardTitle>Patient Registrations</CardTitle>
-                        <CardDescription>New patients registered per month.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                         <ChartContainer config={{}} className="w-full h-[300px]">
-                            <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={patientRegistrationData}>
-                                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3} />
-                                    <XAxis
-                                        dataKey="name"
-                                        tickLine={false}
-                                        tickMargin={10}
-                                        axisLine={false}
-                                    />
-                                    <YAxis />
-                                    <ChartTooltip content={<ChartTooltipContent indicator="dot" />} />
-                                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={4} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </ChartContainer>
-                    </CardContent>
-                </Card>
-             </div>
+
+            {analyticsData && <AnalyticsClient {...analyticsData} />}
+
              <Card className="border-dashed">
                 <CardHeader>
                     <CardTitle>Clinic Management</CardTitle>
