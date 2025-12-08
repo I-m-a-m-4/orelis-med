@@ -146,8 +146,6 @@ function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoadin
     
     const analyticsData = useMemo(() => {
         if (!clinics || !patients) return {
-            totalClinics: 0,
-            totalPatients: 0,
             submissionsOverTime: [],
             subscriptionDistribution: [],
             statusDistribution: [],
@@ -164,13 +162,12 @@ function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoadin
             return Object.entries(counts).map(([name, value]) => ({ name, value }));
         }
 
-        const totalClinics = clinics.length;
-        const totalPatients = patients.length;
-
         const submissionsByDate: { [key: string]: number } = {};
         patients.forEach(p => {
-            const date = format(new Date(p.registrationDate), 'MMM d');
-            submissionsByDate[date] = (submissionsByDate[date] || 0) + 1;
+            if (p.registrationDate) {
+                const date = format(new Date(p.registrationDate), 'MMM d');
+                submissionsByDate[date] = (submissionsByDate[date] || 0) + 1;
+            }
         });
         const submissionsOverTime = Object.entries(submissionsByDate).map(([date, count]) => ({ date, count }));
 
@@ -184,8 +181,6 @@ function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoadin
         const countryDistribution = countOccurrences(countries);
 
         return {
-            totalClinics,
-            totalPatients,
             submissionsOverTime,
             subscriptionDistribution,
             statusDistribution,
@@ -196,8 +191,8 @@ function SuperAdminDashboard({ clinics, patients, clinicsLoading, patientsLoadin
     return (
         <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Total Clinics" value={clinicsLoading ? '...' : (analyticsData?.totalClinics || 0).toString()} icon={<Hospital className="h-4 w-4 text-muted-foreground" />} />
-                <StatCard title="Total Patients" value={patientsLoading ? '...' : (analyticsData?.totalPatients || 0).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Total Clinics" value={clinicsLoading ? '...' : (clinics?.length || 0).toString()} icon={<Hospital className="h-4 w-4 text-muted-foreground" />} />
+                <StatCard title="Total Patients" value={patientsLoading ? '...' : (patients?.length || 0).toString()} icon={<Users className="h-4 w-4 text-muted-foreground" />} />
                 <StatCard title="Paid Subscriptions" value={clinicsLoading ? '...' : (clinics?.filter(c => c.subscription?.plan === 'price_annual').length || 0).toString()} icon={<BadgeDollarSign className="h-4 w-4 text-muted-foreground" />} />
                 <StatCard title="Trial Subscriptions" value={clinicsLoading ? '...' : (clinics?.filter(c => c.subscription?.plan === 'trial').length || 0).toString()} icon={<Clock className="h-4 w-4 text-muted-foreground" />} />
             </div>
