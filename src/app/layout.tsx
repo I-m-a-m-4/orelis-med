@@ -6,6 +6,7 @@ import Script from 'next/script';
 import NextTopLoader from 'nextjs-toploader';
 import { ThemeProvider } from '@/components/theme-provider';
 import { FirebaseClientProvider } from '@/firebase';
+import { Analytics } from '@vercel/analytics/next';
 
 const siteConfig = {
   name: 'Orelis',
@@ -92,6 +93,7 @@ export default function RootLayout({
             <Toaster />
           </ThemeProvider>
         </FirebaseClientProvider>
+        <Analytics />
       </body>
     </html>
   );
